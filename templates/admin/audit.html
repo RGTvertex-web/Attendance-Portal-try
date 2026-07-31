@@ -29,7 +29,7 @@
       <thead>
         <tr>
           <th>Timestamp (UTC)</th>
-          <th>Actor ID</th>
+          <th>Actor</th>
           <th>Action</th>
           <th>Details</th>
         </tr>
@@ -38,7 +38,12 @@
         {% for log in logs %}
         <tr>
           <td style="font-family: monospace; font-size: 0.875rem;" class="text-muted">{{ log.timestamp }}</td>
-          <td>{{ log.actor_id }}</td>
+          <td>
+            <div style="font-weight: 500;">{{ log.actor_name }}</div>
+            {% if log.actor_name == log.actor_id and log.actor_id != 'SYSTEM' %}
+              <div class="text-muted" style="font-size: 0.75rem;">{{ log.actor_id[:8] }}...</div>
+            {% endif %}
+          </td>
           <td><span class="badge badge-neutral" style="font-family: monospace;">{{ log.action }}</span></td>
           <td style="max-width: 400px; white-space: normal;">{{ log.details }}</td>
         </tr>
