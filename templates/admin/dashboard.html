@@ -4,7 +4,7 @@
 
 {% block content %}
 <!-- ── Hero Banner ─────────────────────────────────────────────────────────── -->
-<div class="hero-banner" style="display: flex; justify-content: space-between; align-items: flex-end;">
+<div class="hero-banner" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 1rem;">
   <div>
     <div class="hero-tag">
       <i class="fa-solid fa-circle" style="color: #111; font-size:0.5rem;"></i>
@@ -14,18 +14,18 @@
     <p class="hero-sub mb-0">Here's your organisation's snapshot for today.</p>
   </div>
   
-  <!-- Department Filter -->
-  <form method="GET" action="{{ url_for('admin.dashboard') }}" style="display: flex; gap: 0.5rem; align-items: center; margin-right: 1rem;">
-    <select name="department" class="form-select" onchange="this.form.submit()" style="background: rgba(255,255,255,0.9); border: none; min-width: 150px;">
-      <option value="">All Departments</option>
-      {% for d in DEPARTMENTS %}
-      <option value="{{ d }}" {% if department_filter == d %}selected{% endif %}>{{ d }}</option>
-      {% endfor %}
-    </select>
-  </form>
-  
-  <!-- Exports -->
-  <div style="display: flex; gap: 0.5rem;">
+  <div class="hero-actions" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+    <!-- Department Filter -->
+    <form method="GET" action="{{ url_for('admin.dashboard') }}" style="margin: 0;">
+      <select name="department" class="form-select" onchange="this.form.submit()" style="background: rgba(255,255,255,0.9); border: none; min-width: 150px;">
+        <option value="">All Departments</option>
+        {% for d in DEPARTMENTS %}
+        <option value="{{ d }}" {% if department_filter == d %}selected{% endif %}>{{ d }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    
+    <!-- Exports -->
     <button class="btn btn-outline" type="button" data-bs-toggle="modal" data-bs-target="#exportModal" style="background: white; border-color: rgba(255,255,255,0.2);">
       <i class="fa-solid fa-download"></i> Export Data
     </button>
@@ -101,7 +101,7 @@
 </div>
 
 <h3 class="mb-4 mt-5">Performance Overview</h3>
-<div class="grid-cols-3 mb-4">
+<div class="kpi-row mb-4">
   <div class="card mb-0 text-center">
     <div class="card-header border-0 pb-0">
       <h3 class="card-title w-100">Average Score</h3>
@@ -383,14 +383,16 @@
     const adminAbsent = Number("{{ org.today_absent }}") || 0;
     const adminOnLeave = Number("{{ org.today_on_leave }}") || 0;
     
+    const hasAdminData = adminPresent > 0 || adminAbsent > 0 || adminOnLeave > 0;
+    
     // Status Donut Chart
     new Chart(document.getElementById('statusChart'), {
       type: 'doughnut',
       data: {
-        labels: ['Present', 'Absent', 'On Leave'],
+        labels: hasAdminData ? ['Present', 'Absent', 'On Leave'] : ['No Data'],
         datasets: [{
-          data: [adminPresent, adminAbsent, adminOnLeave],
-          backgroundColor: ['#111111', '#7a1f2b', '#9ca3af'],
+          data: hasAdminData ? [adminPresent, adminAbsent, adminOnLeave] : [1],
+          backgroundColor: hasAdminData ? ['#111111', '#7a1f2b', '#9ca3af'] : ['#f3f4f6'],
           borderWidth: 0
         }]
       },
