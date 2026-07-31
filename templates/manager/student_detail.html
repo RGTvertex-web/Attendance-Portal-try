@@ -1,0 +1,486 @@
+{% extends "base_manager.html" %}
+
+{% block page_title %}{{ student.name }} - Intern Profile{% endblock %}
+
+{% block content %}
+<style>
+/* ── Page Shell ── */
+.hrm-page { padding: 2rem 2.5rem 3.5rem; background: #f8fafc; min-height: 100%; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+/* ── Profile Header Bar ── */
+.profile-top-bar { 
+  display: flex; align-items: center; justify-content: space-between; 
+  margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid #e2e8f0; 
+  flex-wrap: wrap; gap: 1.25rem; 
+}
+.profile-user-info { display: flex; align-items: center; gap: 1.25rem; }
+.profile-avatar {
+  width: 56px; height: 56px; border-radius: 16px; flex-shrink: 0;
+  background: linear-gradient(135deg, #7c3aed, #4c1d95);
+  color: #fff; font-size: 1.4rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+}
+.profile-title-area h1 { font-size: 1.75rem; font-weight: 800; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 0.6rem; }
+.profile-id-badge {
+  background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;
+  font-size: 0.8rem; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 99px;
+  letter-spacing: 0.03em;
+}
+.profile-subtitle { font-size: 0.9rem; color: #64748b; margin: 0.25rem 0 0; }
+
+.header-actions { display: flex; gap: 0.75rem; align-items: center; }
+.btn-action-outline {
+  background: #fff; border: 1px solid #cbd5e1; border-radius: 0.75rem;
+  padding: 0.55rem 1rem; font-size: 0.85rem; font-weight: 600; color: #334155;
+  text-decoration: none !important; display: inline-flex; align-items: center; gap: 0.5rem;
+  transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+.btn-action-outline:hover { border-color: #7c3aed; color: #7c3aed; background: #faf5ff; box-shadow: 0 2px 6px rgba(124,58,237,0.08); }
+.btn-action-primary {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9); border: none; border-radius: 0.75rem;
+  padding: 0.55rem 1.1rem; font-size: 0.85rem; font-weight: 700; color: #fff;
+  text-decoration: none !important; display: inline-flex; align-items: center; gap: 0.5rem;
+  transition: all 0.2s; box-shadow: 0 4px 10px rgba(124,58,237,0.25);
+}
+.btn-action-primary:hover { background: linear-gradient(135deg, #6d28d9, #5b21b6); transform: translateY(-1px); }
+
+/* ── Grid Layouts ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.75rem; margin-bottom: 2rem; align-items: start; }
+@media (max-width: 1024px) { .grid-2 { grid-template-columns: 1fr; } }
+
+/* ── Modern Cards ── */
+.hrm-card {
+  background: #fff; border-radius: 1.25rem; border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04); overflow: hidden;
+}
+.hrm-card-header {
+  padding: 1.25rem 1.75rem; border-bottom: 1px solid #f1f5f9;
+  background: linear-gradient(to right, #fafaff, #fff);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hrm-card-title { font-size: 1.05rem; font-weight: 700; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 0.6rem; }
+.hrm-card-title i { color: #7c3aed; font-size: 1.1rem; }
+.hrm-card-body { padding: 1.75rem; }
+
+/* ── Attendance Summary Stats Grid ── */
+.att-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+@media (max-width: 640px) { .att-stats-grid { grid-template-columns: repeat(2, 1fr); } }
+.att-stat-box {
+  background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 1rem; padding: 1rem;
+  text-align: center; transition: all 0.2s;
+}
+.att-stat-box:hover { border-color: #e2e8f0; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+.att-stat-label { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem; }
+.att-stat-value { font-size: 1.8rem; font-weight: 900; color: #0f172a; line-height: 1; }
+.val-present { color: #16a34a; }
+.val-late    { color: #d97706; }
+.val-absent  { color: #dc2626; }
+.val-overall { color: #7c3aed; }
+
+.progress-container { margin-top: 1.25rem; }
+.progress-bar-track {
+  width: 100%; height: 10px; background: #f1f5f9; border-radius: 99px; overflow: hidden; margin-bottom: 0.5rem;
+  border: 1px solid #e2e8f0;
+}
+.progress-bar-fill {
+  height: 100%; background: linear-gradient(90deg, #7c3aed, #a78bfa); border-radius: 99px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.progress-caption { font-size: 0.8rem; font-weight: 600; color: #64748b; text-align: center; }
+
+/* ── Warnings List ── */
+.warnings-list { display: flex; flex-direction: column; gap: 0.85rem; }
+.warning-card {
+  background: #fef2f2; border: 1px solid #fecaca; border-radius: 1rem; padding: 1.1rem 1.25rem;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+}
+.warning-card.revoked { background: #f8fafc; border-color: #e2e8f0; opacity: 0.65; }
+.warning-content { display: flex; align-items: flex-start; gap: 0.85rem; flex-grow: 1; }
+.warning-icon { color: #dc2626; font-size: 1.15rem; margin-top: 0.1rem; }
+.revoked .warning-icon { color: #94a3b8; }
+.warning-reason { font-weight: 700; color: #991b1b; font-size: 0.95rem; margin-bottom: 0.25rem; }
+.revoked .warning-reason { color: #475569; text-decoration: line-through; }
+.warning-meta { font-size: 0.78rem; color: #b91c1c; font-weight: 500; }
+.revoked .warning-meta { color: #64748b; }
+
+.badge-status-pill {
+  display: inline-block; font-size: 0.68rem; font-weight: 800; text-transform: uppercase;
+  padding: 0.15rem 0.55rem; border-radius: 99px; letter-spacing: 0.04em; margin-left: 0.5rem;
+}
+.pill-revoked { background: #e2e8f0; color: #475569; }
+.pill-ack     { background: #dcfce7; color: #16a34a; }
+
+.btn-revoke {
+  background: #fff; border: 1px solid #fca5a5; color: #dc2626; border-radius: 0.5rem;
+  padding: 0.35rem 0.75rem; font-size: 0.75rem; font-weight: 700; cursor: pointer;
+  transition: all 0.2s; white-space: nowrap;
+}
+.btn-revoke:hover { background: #fee2e2; border-color: #dc2626; }
+
+/* ── Manager Notes ── */
+.note-form-area { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 1.25rem; margin-bottom: 1.5rem; }
+.note-textarea {
+  width: 100%; border: 1px solid #cbd5e1; border-radius: 0.75rem; padding: 0.75rem 1rem;
+  font-size: 0.9rem; font-family: inherit; color: #0f172a; background: #fff; outline: none;
+  transition: border-color 0.2s; box-sizing: border-box; resize: vertical;
+}
+.note-textarea:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1); }
+.btn-add-note {
+  background: #0f172a; color: #fff; border: none; border-radius: 0.65rem;
+  padding: 0.55rem 1.1rem; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+  transition: background 0.2s; margin-top: 0.75rem;
+}
+.btn-add-note:hover { background: #334155; }
+
+.notes-list { display: flex; flex-direction: column; gap: 0.85rem; }
+.note-item {
+  background: #fff; border: 1px solid #f1f5f9; border-radius: 0.85rem; padding: 1rem 1.25rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+.note-time { font-size: 0.75rem; font-weight: 700; color: #94a3b8; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem; }
+.note-text { font-size: 0.9rem; color: #334155; line-height: 1.5; font-weight: 500; }
+
+/* ── Tables ── */
+.table-responsive { overflow-x: auto; }
+.hrm-table { width: 100%; border-collapse: collapse; }
+.hrm-table thead th {
+  font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 0.85rem 1.25rem; border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc; text-align: left; white-space: nowrap;
+}
+.hrm-table tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.15s; }
+.hrm-table tbody tr:last-child { border-bottom: none; }
+.hrm-table tbody tr:hover { background: #fafaff; }
+.hrm-table td { padding: 0.9rem 1.25rem; vertical-align: middle; font-size: 0.88rem; color: #334155; }
+
+/* ── Status Pills ── */
+.status-pill { display: inline-block; border-radius: 99px; padding: 0.25rem 0.75rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+.pill-present { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.pill-late    { background: #fef9c3; color: #a16207; border: 1px solid #fde047; }
+.pill-absent  { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.pill-info    { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.pill-default { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+
+/* ── Past Performance Cards ── */
+.past-perf-list { display: flex; flex-direction: column; gap: 1rem; }
+.past-perf-card {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 1.25rem;
+  transition: all 0.2s;
+}
+.past-perf-card:hover { background: #fff; border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+.past-perf-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem; }
+.past-perf-title { font-weight: 700; color: #0f172a; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; }
+.past-perf-date { font-size: 0.78rem; color: #64748b; font-weight: 600; }
+.past-perf-body { font-size: 0.88rem; color: #475569; line-height: 1.5; background: #fff; border: 1px solid #f1f5f9; border-radius: 0.75rem; padding: 0.85rem 1rem; margin-top: 0.5rem; }
+
+.empty-state-box { padding: 3rem 1.5rem; text-align: center; color: #94a3b8; font-size: 0.9rem; font-weight: 500; }
+.empty-state-box i { font-size: 2rem; color: #cbd5e1; margin-bottom: 0.75rem; display: block; }
+</style>
+
+<div class="hrm-page">
+
+  <!-- ── Profile Header Bar ── -->
+  <div class="profile-top-bar">
+    <div class="profile-user-info">
+      <div class="profile-avatar">
+        {{ student.name[:2]|upper }}
+      </div>
+      <div class="profile-title-area">
+        <h1>
+          {{ student.name }}
+          {% if student.intern_id %}
+            <span class="profile-id-badge">{{ student.intern_id }}</span>
+          {% endif %}
+        </h1>
+        <p class="profile-subtitle"><i class="fa-solid fa-calendar-day" style="color:#7c3aed;"></i> Joined: <strong>{{ student.get('joining_date') or 'Not Set' }}</strong> &bull; <i class="fa-solid fa-id-card-clip" style="color:#7c3aed;"></i> Detailed attendance, disciplinary warnings, and report records.</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <a href="{{ url_for('manager.tasks') }}" class="btn-action-outline">
+        <i class="fa-solid fa-list-check"></i> Task History
+      </a>
+      <a href="{{ url_for('manager.export_performance_report_pdf', intern_id=student.id) }}" class="btn-action-outline" style="border-color: #15803d; color: #15803d; background: #f0fdf4;" target="_blank">
+        <i class="fa-solid fa-file-pdf"></i> Official Report (PDF)
+      </a>
+      <a href="{{ url_for('manager.performance') }}" class="btn-action-primary">
+        <i class="fa-solid fa-star"></i> Monthly Evaluation
+      </a>
+      <a href="{{ url_for('manager.dashboard') }}" class="btn-action-outline" style="background:#f1f5f9;">
+        <i class="fa-solid fa-arrow-left"></i> Back
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Top Grid: Attendance & Warnings ── -->
+  <div class="grid-2">
+
+    <!-- Attendance Summary Card -->
+    <div class="hrm-card">
+      <div class="hrm-card-header">
+        <h3 class="hrm-card-title"><i class="fa-solid fa-calendar-check"></i> Attendance Summary</h3>
+      </div>
+      <div class="hrm-card-body">
+        <div class="att-stats-grid">
+          <div class="att-stat-box">
+            <div class="att-stat-label">Present</div>
+            <div class="att-stat-value val-present">{{ att_summary.present }}</div>
+          </div>
+          <div class="att-stat-box">
+            <div class="att-stat-label">Late</div>
+            <div class="att-stat-value val-late">{{ att_summary.late }}</div>
+          </div>
+          <div class="att-stat-box">
+            <div class="att-stat-label">Absent</div>
+            <div class="att-stat-value val-absent">{{ att_summary.absent }}</div>
+          </div>
+          <div class="att-stat-box">
+            <div class="att-stat-label">Overall Rate</div>
+            <div class="att-stat-value val-overall">{{ att_summary.percentage }}%</div>
+          </div>
+        </div>
+
+        <div class="progress-container">
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" style="width: {{ att_summary.percentage }}%;"></div>
+          </div>
+          <div class="progress-caption">{{ att_summary.percentage }}% cumulative attendance consistency</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Disciplinary Warnings Card -->
+    <div class="hrm-card">
+      <div class="hrm-card-header">
+        <h3 class="hrm-card-title"><i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;"></i> Disciplinary Warnings</h3>
+        {% if warnings %}
+        <span class="status-pill pill-absent" style="padding: 0.15rem 0.6rem; font-size: 0.7rem;">{{ warnings|length }} Issued</span>
+        {% endif %}
+      </div>
+      <div class="hrm-card-body">
+        {% if warnings %}
+          <div class="warnings-list">
+          {% for w in warnings %}
+            <div class="warning-card {% if w.status == 'revoked' %}revoked{% endif %}">
+              <div class="warning-content">
+                <i class="fa-solid fa-circle-exclamation warning-icon"></i>
+                <div>
+                  <div class="warning-reason">
+                    {{ w.reason }}
+                    {% if w.status == 'revoked' %}
+                      <span class="badge-status-pill pill-revoked">Revoked</span>
+                    {% elif w.acknowledged == 'yes' %}
+                      <span class="badge-status-pill pill-ack">Acknowledged</span>
+                    {% endif %}
+                  </div>
+                  <div class="warning-meta">
+                    <i class="fa-regular fa-calendar"></i> {{ w.date }} · Issued by <strong>{{ w.issued_by }}</strong>
+                  </div>
+                </div>
+              </div>
+              {% if w.status != 'revoked' and (w.issued_by == g.user.name or g.user_role == 'admin') %}
+              <div>
+                <form action="{{ url_for('manager.revoke_warning_route', warning_id=w.warning_id) }}" method="POST" style="margin: 0;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn-revoke"><i class="fa-solid fa-rotate-left"></i> Revoke</button>
+                </form>
+              </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state-box">
+            <i class="fa-solid fa-shield-check" style="color:#22c55e;"></i>
+            <span style="color:#15803d; font-weight:700; font-size:1rem; display:block; margin-bottom:0.25rem;">Clean Record</span>
+            No disciplinary warnings have been issued for this intern.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Private Manager Notes ── -->
+  <div class="hrm-card" style="margin-bottom: 2rem;">
+    <div class="hrm-card-header">
+      <h3 class="hrm-card-title"><i class="fa-solid fa-lock" style="color:#64748b;"></i> Private Manager Notes</h3>
+      <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;"><i class="fa-solid fa-eye-slash"></i> Visible only to managers & admins</span>
+    </div>
+    <div class="hrm-card-body">
+      <div class="note-form-area">
+        <form method="POST" action="{{ url_for('manager.add_manager_note', intern_id=student.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <textarea name="note" class="note-textarea" rows="2" placeholder="Write a confidential note or observation regarding this intern..." required></textarea>
+          <div style="text-align: right;">
+            <button type="submit" class="btn-add-note"><i class="fa-solid fa-plus"></i> Save Private Note</button>
+          </div>
+        </form>
+      </div>
+
+      {% if manager_notes %}
+        <div class="notes-list">
+        {% for note in manager_notes %}
+          <div class="note-item">
+            <div class="note-time"><i class="fa-regular fa-clock"></i> {{ note.timestamp }}</div>
+            <div class="note-text">{{ note.content }}</div>
+          </div>
+        {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state-box" style="padding: 1.5rem 0;">
+          No private manager notes recorded yet.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── Attendance History Table ── -->
+  <div class="hrm-card" style="margin-bottom: 2rem;">
+    <div class="hrm-card-header">
+      <h3 class="hrm-card-title"><i class="fa-solid fa-clock-rotate-left"></i> Attendance History Log</h3>
+    </div>
+    <div class="table-responsive">
+      <table class="hrm-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Category / Type</th>
+            <th>Notes & Remarks</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rec in att_summary.records %}
+          <tr>
+            <td style="font-weight: 700; color: #0f172a;">{{ rec.date }}</td>
+            <td>
+              {% if rec.status == 'present' %}
+                <span class="status-pill pill-present"><i class="fa-solid fa-check"></i> Present</span>
+              {% elif rec.status == 'present_late' %}
+                <span class="status-pill pill-late"><i class="fa-solid fa-clock"></i> Late</span>
+              {% elif rec.status == 'absent' %}
+                <span class="status-pill pill-absent"><i class="fa-solid fa-xmark"></i> Absent</span>
+              {% elif rec.status == 'on_leave' %}
+                <span class="status-pill pill-info"><i class="fa-solid fa-plane"></i> On Leave</span>
+              {% else %}
+                <span class="status-pill pill-default">{{ rec.status | replace('_', ' ') | title }}</span>
+              {% endif %}
+            </td>
+            <td style="color: #64748b; font-weight: 500;">{{ rec.category }}</td>
+            <td style="color: #475569;">{{ rec.notes or '—' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4"><div class="empty-state-box">No attendance records logged for this intern yet.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Daily Reports & Performance Records ── -->
+  <div class="grid-2">
+    
+    <!-- Daily Submissions -->
+    <div class="hrm-card">
+      <div class="hrm-card-header">
+        <h3 class="hrm-card-title"><i class="fa-solid fa-file-lines"></i> Recent Daily Reports</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="hrm-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Work Done Summary</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sub in submissions|sort(attribute='submitted_at', reverse=True) %}
+            <tr>
+              <td style="font-weight: 700; color: #0f172a; white-space: nowrap;">{{ sub.submitted_at[:10] }}</td>
+              <td style="color: #475569; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ sub.report_data.done }}
+              </td>
+              <td>
+                {% if sub.status in ('approved', 'reviewed') %}
+                  <span class="status-pill pill-present" style="font-size:0.65rem;">Reviewed</span>
+                {% else %}
+                  <span class="status-pill pill-late" style="font-size:0.65rem;">Pending</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if g.user_role == 'admin' %}
+                  <a href="{{ url_for('admin.report_detail', report_id=sub.submission_id) }}" class="btn-action-outline" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;">View</a>
+                {% else %}
+                  <span style="font-size: 0.75rem; color: #94a3b8;">Logged</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4"><div class="empty-state-box" style="padding: 2rem 0;">No daily reports submitted yet.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Past Performance Reports -->
+    <div class="hrm-card">
+      <div class="hrm-card-header">
+        <h3 class="hrm-card-title"><i class="fa-solid fa-award"></i> Past Evaluation Records</h3>
+        <a href="{{ url_for('manager.performance') }}" class="btn-action-outline" style="padding: 0.3rem 0.7rem; font-size: 0.75rem;"><i class="fa-solid fa-plus"></i> New Report</a>
+      </div>
+      <div class="hrm-card-body">
+        {% if perf_reports %}
+          <div class="past-perf-list">
+          {% for pr in perf_reports|reverse %}
+            <div class="past-perf-card">
+              <div class="past-perf-header">
+                <div class="past-perf-title">
+                  <i class="fa-solid fa-certificate" style="color:#7c3aed;"></i> {{ pr.get('report_type', 'Monthly') }} Evaluation
+                  <span class="status-pill {% if pr.get('rating', pr.get('grade_band', '')) in ('Outstanding', 'Excellent', 'Exceeds Expectations') %}pill-present{% elif pr.get('rating', pr.get('grade_band', '')) in ('Good', 'Meets Expectations') %}pill-info{% elif pr.get('rating', pr.get('grade_band', '')) == 'Satisfactory' %}pill-late{% else %}pill-absent{% endif %}" style="font-size: 0.68rem; margin-left: 0.3rem;">
+                    {{ pr.get('rating', pr.get('grade_band', '')) or (pr.get('total_score', '') ~ '/30') }}
+                  </span>
+                </div>
+                <div class="past-perf-date">{{ (pr.get('created_at') or pr.get('submitted_at', ''))[:10] }}</div>
+              </div>
+              <div class="p-2 my-2" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 0.75rem;">
+                <div style="font-weight: 700; color: #64748b; margin-bottom: 0.3rem;"><i class="fa-solid fa-file-invoice" style="color: #7c3aed;"></i> Official PDF Export Metrics (out of 10):</div>
+                <div class="d-flex flex-wrap gap-3">
+                  <div>Init: <strong style="color:#0f172a;">{{ pr.get('derived_initiative', pr.get('initiative', '0')) }}</strong></div>
+                  <div>Tasks: <strong style="color:#0f172a;">{{ pr.get('derived_tasks_completed', 0) }} / {{ pr.get('derived_tasks_assigned', 0) }} ({{ pr.get('derived_completion_pct', '0%') }})</strong></div>
+                  <div>Behav: <strong style="color:#0f172a;">{{ pr.get('derived_behavioral_index', '–') }}</strong></div>
+                  <div>Obtained: <strong style="color:#0f172a;">{{ pr.get('derived_obtained_score', '–') }}</strong></div>
+                  <div>Standing: <span class="badge" style="background: {% if pr.get('derived_standing') == 'PASS' %}#dcfce7; color:#15803d{% else %}#fee2e2; color:#b91c1c{% endif %}; font-size: 0.65rem;">{{ pr.get('derived_standing', '–') }}</span></div>
+                </div>
+              </div>
+              <div class="past-perf-body">
+                {{ pr.get('feedback') or pr.get('overall_comments') or pr.get('strengths') or 'No additional feedback provided.' }}
+              </div>
+            </div>
+          {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state-box" style="padding: 2rem 0;">
+            <i class="fa-solid fa-star-half-stroke"></i>
+            <p style="margin-bottom: 0.5rem;">No performance reports on file. Use the Monthly Performance dashboard to issue new evaluations.</p>
+            <div class="p-2 mx-auto" style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 0.5rem; max-width: 500px; font-size: 0.75rem;">
+              <div style="font-weight: 700; color: #64748b; margin-bottom: 0.3rem;"><i class="fa-solid fa-file-invoice" style="color: #7c3aed;"></i> Official PDF Export Summary (No Report Issued Yet):</div>
+              <div class="d-flex justify-content-around">
+                <div>Init: <strong>0</strong>/10</div>
+                <div>Tasks: <strong>0</strong>/10 (0%)</div>
+                <div>Behav: <strong>–</strong>/10</div>
+                <div>Obt: <strong>–</strong>/10 <span class="badge" style="background: #f1f5f9; color: #64748b; font-size: 0.65rem;">IN PROGRESS</span></div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /hrm-page -->
+{% endblock %}

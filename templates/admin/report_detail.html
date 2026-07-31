@@ -1,0 +1,74 @@
+{% extends "base_dashboard.html" %}
+
+{% block page_title %}Report Detail{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+  <div>
+    <a href="{{ url_for('admin.reports') }}" class="btn btn-outline btn-sm mb-3"><i class="fa-solid fa-arrow-left"></i> Back to Reports</a>
+    <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 0.5rem;">Daily Report: {{ date_str }}</h1>
+    <p class="text-muted" style="margin: 0;">Submitted by {{ intern.name }} ({{ intern.department }})</p>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; align-items: start;">
+  
+  <div class="card">
+    <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: 1.5rem; font-weight: 600;">
+      Task Details
+    </div>
+    <div class="card-body" style="padding: 1.5rem;">
+      <div style="margin-bottom: 1.5rem;">
+        <label class="form-label text-muted" style="font-size: 0.875rem;">What task was given today?</label>
+        <div style="background: var(--color-surface); padding: 1rem; border: 1px solid var(--color-border); border-radius: 8px;">
+          {{ report_data.given | replace('\n', '<br>') | safe }}
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 1.5rem;">
+        <label class="form-label text-muted" style="font-size: 0.875rem;">How much is done?</label>
+        <div style="background: var(--color-surface); padding: 1rem; border: 1px solid var(--color-border); border-radius: 8px;">
+          {{ report_data.done | replace('\n', '<br>') | safe }}
+        </div>
+      </div>
+      
+      <div>
+        <label class="form-label text-muted" style="font-size: 0.875rem;">How much is remaining?</label>
+        <div style="background: var(--color-surface); padding: 1rem; border: 1px solid var(--color-border); border-radius: 8px;">
+          {{ report_data.remaining | replace('\n', '<br>') | safe }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: 1.5rem; font-weight: 600;">
+      Review & Feedback
+    </div>
+    <div class="card-body" style="padding: 1.5rem;">
+      <form method="POST" action="{{ url_for('admin.report_detail', report_id=report.submission_id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="form-group">
+          <label class="form-label" for="status">Action</label>
+          <select id="status" name="status" class="form-control" required>
+            <option value="reviewed" {% if report.status == 'reviewed' %}selected{% endif %}>Mark as Reviewed</option>
+            <option value="approved" {% if report.status == 'approved' %}selected{% endif %}>Mark as Approved</option>
+            <option value="rejected" {% if report.status == 'rejected' %}selected{% endif %}>Needs Revision / Reject</option>
+          </select>
+        </div>
+        
+        <div class="form-group mb-4">
+          <label class="form-label" for="remarks">Manager / Admin Remarks</label>
+          <textarea id="remarks" name="remarks" class="form-control" rows="4" placeholder="Add any feedback for the intern here...">{{ report.remarks }}</textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary w-100">
+          Save Review
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

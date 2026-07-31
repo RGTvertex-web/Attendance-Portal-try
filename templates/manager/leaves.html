@@ -1,0 +1,337 @@
+{% extends "base_manager.html" %}
+
+{% block page_title %}Leave Applications Dashboard{% endblock %}
+
+{% block content %}
+<style>
+/* ── Page Shell ── */
+.hrm-page { padding: 2rem 2.5rem 3.5rem; background: #f8fafc; min-height: 100%; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+/* ── Top Header Bar ── */
+.page-top-bar { 
+  display: flex; align-items: center; justify-content: space-between; 
+  margin-bottom: 2rem; padding-bottom: 1.25rem; border-bottom: 1px solid #e2e8f0; 
+  flex-wrap: wrap; gap: 1rem; 
+}
+.page-top-bar h2 { font-size: 1.6rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em; }
+.page-top-bar p  { font-size: 0.9rem; color: #64748b; margin: 0.25rem 0 0; }
+
+.header-action-pill {
+  background: #fff; border: 1px solid #cbd5e1; border-radius: 99px;
+  padding: 0.45rem 1.1rem; font-size: 0.82rem; font-weight: 700; color: #475569;
+  display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+.header-action-pill i { color: #7c3aed; }
+
+/* ── Summary Stats Grid ── */
+.leaves-stats-grid { 
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2rem; 
+}
+@media (max-width: 900px) { .leaves-stats-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 500px) { .leaves-stats-grid { grid-template-columns: 1fr; } }
+
+.stat-metric-card {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 1.2rem; padding: 1.25rem 1.5rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  box-shadow: 0 4px 15px -2px rgba(0,0,0,0.03); transition: all 0.2s;
+}
+.stat-metric-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -2px rgba(0,0,0,0.06); border-color: #cbd5e1; }
+.stat-info { display: flex; flex-direction: column; }
+.stat-label { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.3rem; }
+.stat-number { font-size: 1.75rem; font-weight: 900; color: #0f172a; line-height: 1; }
+.stat-icon-wrap {
+  width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; flex-shrink: 0;
+}
+.wrap-total   { background: #f3e8ff; color: #7c3aed; }
+.wrap-approved{ background: #dcfce7; color: #16a34a; }
+.wrap-pending { background: #fef9c3; color: #d97706; }
+.wrap-rejected{ background: #fee2e2; color: #dc2626; }
+
+/* ── Main Card ── */
+.hrm-card {
+  background: #fff; border-radius: 1.35rem; border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 25px -5px rgba(0, 0, 0, 0.04); overflow: hidden;
+}
+.hrm-card-header { 
+  padding: 1.35rem 1.75rem; border-bottom: 1px solid #f1f5f9; 
+  background: linear-gradient(to right, #faf5ff, #fff);
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+}
+.hrm-card-title { font-size: 1.1rem; font-weight: 800; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 0.6rem; }
+.hrm-card-title i { color: #7c3aed; font-size: 1.15rem; }
+
+/* ── Search Input ── */
+.search-input-wrap { display: flex; align-items: center; gap: 0.5rem; }
+.form-search-hrm {
+  border: 1px solid #cbd5e1; border-radius: 0.75rem; padding: 0.6rem 1.1rem;
+  font-size: 0.88rem; color: #0f172a; outline: none; transition: all 0.2s;
+  width: 280px; background: #fff; font-family: inherit;
+}
+.form-search-hrm:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12); }
+.btn-search-hrm {
+  background: #0f172a; border: none; border-radius: 0.75rem;
+  padding: 0.6rem 1.1rem; font-size: 0.85rem; font-weight: 700; color: #fff;
+  cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.4rem;
+}
+.btn-search-hrm:hover { background: #7c3aed; }
+
+/* ── Table ── */
+.table-responsive { overflow-x: auto; }
+.hrm-table { width: 100%; border-collapse: collapse; }
+.hrm-table thead th {
+  font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 1rem 1.5rem; border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc; text-align: left; white-space: nowrap;
+}
+.hrm-table tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.15s; }
+.hrm-table tbody tr:last-child { border-bottom: none; }
+.hrm-table tbody tr:hover { background: #fafaff; }
+.hrm-table td { padding: 1.1rem 1.5rem; vertical-align: middle; font-size: 0.9rem; color: #334155; }
+
+/* ── Intern Cell ── */
+.intern-cell { display: flex; align-items: center; gap: 0.85rem; }
+.int-avatar {
+  width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+  background: linear-gradient(135deg, #7c3aed, #4c1d95); color: #fff;
+  font-size: 0.88rem; font-weight: 800; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 10px rgba(124, 58, 237, 0.2);
+}
+
+/* ── Status Pills ── */
+.status-pill { display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 99px; padding: 0.3rem 0.85rem; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; }
+.pill-approved { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.pill-pending  { background: #fef9c3; color: #a16207; border: 1px solid #fde047; }
+.pill-rejected { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+
+.btn-review {
+  background: #fff; border: 1px solid #cbd5e1; border-radius: 0.75rem;
+  padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 700; color: #475569;
+  text-decoration: none !important; display: inline-flex; align-items: center; gap: 0.45rem;
+  transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+.btn-review:hover { border-color: #7c3aed; color: #7c3aed; background: #faf5ff; box-shadow: 0 4px 10px rgba(124,58,237,0.1); transform: translateY(-1px); }
+
+/* ── Rich Policy Empty State ── */
+.empty-state-container { padding: 3.5rem 2rem; text-align: center; max-width: 800px; margin: 0 auto; }
+.empty-icon-circle {
+  width: 68px; height: 68px; border-radius: 20px; background: #f3e8ff; color: #7c3aed;
+  font-size: 2rem; display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 1.25rem; box-shadow: 0 4px 12px rgba(124,58,237,0.15);
+}
+.empty-title { font-size: 1.3rem; font-weight: 800; color: #0f172a; margin: 0 0 0.5rem; }
+.empty-desc  { font-size: 0.92rem; color: #64748b; line-height: 1.6; margin: 0 auto 2.5rem; max-width: 540px; }
+
+.policy-guide-card {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1.25rem; padding: 1.5rem; text-align: left;
+  box-shadow: 0 4px 15px -2px rgba(0,0,0,0.02);
+}
+.policy-title {
+  font-size: 0.82rem; font-weight: 800; color: #334155; text-transform: uppercase;
+  letter-spacing: 0.05em; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;
+  padding-bottom: 0.75rem; border-bottom: 1px solid #f1f5f9;
+}
+.policy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+@media (max-width: 640px) { .policy-grid { grid-template-columns: 1fr; } }
+.policy-item { display: flex; align-items: flex-start; gap: 0.85rem; }
+.p-icon {
+  width: 40px; height: 40px; border-radius: 10px; background: #f3e8ff; color: #7c3aed;
+  display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;
+}
+.policy-item strong { display: block; font-size: 0.9rem; color: #0f172a; font-weight: 700; margin-bottom: 0.2rem; }
+.policy-item span   { font-size: 0.82rem; color: #64748b; line-height: 1.4; }
+
+/* ── Pagination ── */
+.pagination-bar {
+  padding: 1.25rem 1.75rem; border-top: 1px solid #f1f5f9; background: #f8fafc;
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+}
+.btn-page {
+  background: #fff; border: 1px solid #cbd5e1; border-radius: 0.75rem;
+  padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 700; color: #334155;
+  text-decoration: none !important; transition: all 0.18s; display: inline-flex; align-items: center; gap: 0.4rem;
+}
+.btn-page:hover:not([disabled]) { border-color: #7c3aed; color: #7c3aed; box-shadow: 0 2px 6px rgba(124,58,237,0.08); }
+.btn-page[disabled] { opacity: 0.45; cursor: not-allowed; background: #f1f5f9; }
+</style>
+
+<div class="hrm-page">
+
+  <!-- ── Top Header ── -->
+  <div class="page-top-bar">
+    <div>
+      <h2>Leave Applications & Absence Management</h2>
+      <p>Review intern leave requests, verify remaining quota balances, and manage team schedules.</p>
+    </div>
+    <div class="header-action-pill">
+      <i class="fa-solid fa-scale-balanced"></i>
+      <span>Standard Quota: <strong>1.5 Days / Month</strong></span>
+    </div>
+  </div>
+
+  <!-- ── Summary Stats Grid ── -->
+  {% set cnt_app = leaves | selectattr('status','equalto','approved') | list | length %}
+  {% set cnt_pen = leaves | selectattr('status','equalto','pending')  | list | length %}
+  {% set cnt_rej = leaves | selectattr('status','equalto','rejected') | list | length %}
+  <div class="leaves-stats-grid">
+    <div class="stat-metric-card">
+      <div class="stat-info">
+        <span class="stat-label">Total Applications</span>
+        <span class="stat-number">{{ leaves|length }}</span>
+      </div>
+      <div class="stat-icon-wrap wrap-total"><i class="fa-solid fa-folder-open"></i></div>
+    </div>
+    <div class="stat-metric-card">
+      <div class="stat-info">
+        <span class="stat-label">Pending Approval</span>
+        <span class="stat-number" style="color:#d97706;">{{ cnt_pen }}</span>
+      </div>
+      <div class="stat-icon-wrap wrap-pending"><i class="fa-solid fa-clock"></i></div>
+    </div>
+    <div class="stat-metric-card">
+      <div class="stat-info">
+        <span class="stat-label">Approved Leaves</span>
+        <span class="stat-number" style="color:#16a34a;">{{ cnt_app }}</span>
+      </div>
+      <div class="stat-icon-wrap wrap-approved"><i class="fa-solid fa-check-double"></i></div>
+    </div>
+    <div class="stat-metric-card">
+      <div class="stat-info">
+        <span class="stat-label">Rejected / Denied</span>
+        <span class="stat-number" style="color:#dc2626;">{{ cnt_rej }}</span>
+      </div>
+      <div class="stat-icon-wrap wrap-rejected"><i class="fa-solid fa-xmark"></i></div>
+    </div>
+  </div>
+
+  <!-- ── Main Applications Table Card ── -->
+  <div class="hrm-card">
+    <div class="hrm-card-header">
+      <h3 class="hrm-card-title"><i class="fa-solid fa-calendar-minus"></i> Team Leave Applications</h3>
+      <form method="GET" action="{{ url_for('manager.leaves') }}" class="search-input-wrap">
+        <input type="text" name="search" class="form-search-hrm" placeholder="Search interns or reasons..." value="{{ search }}" onblur="this.form.submit()">
+        <button type="submit" class="btn-search-hrm"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+      </form>
+    </div>
+
+    <div class="table-responsive">
+      <table class="hrm-table" data-paginate="true">
+        <thead>
+          <tr>
+            <th>Intern & Quota Balance</th>
+            <th>Leave Duration</th>
+            <th>Reason & Category</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for leave in leaves %}
+          <tr>
+            <td>
+              <div class="intern-cell">
+                <div class="int-avatar">{{ leave.student_name[:2]|upper }}</div>
+                <div>
+                  <div style="font-weight: 800; color: #0f172a; font-size: 0.95rem;">{{ leave.student_name }}</div>
+                  <div style="font-size: 0.78rem; color: #64748b; font-weight: 600;">Balance remaining: <strong style="color:#0f172a;">{{ leave.leave_balance }} days</strong></div>
+                </div>
+              </div>
+            </td>
+            <td style="font-weight: 700; color: #334155;">
+              <i class="fa-regular fa-calendar-check" style="color:#7c3aed; margin-right: 0.3rem;"></i> {{ leave.start_date }} 
+              <span style="color:#94a3b8; margin: 0 0.3rem;">→</span> 
+              {{ leave.end_date }}
+            </td>
+            <td style="max-width: 280px; color: #475569; font-weight: 500;">
+              <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ leave.reason }}
+              </div>
+            </td>
+            <td>
+              {% if leave.status == 'approved' %}
+                <span class="status-pill pill-approved"><i class="fa-solid fa-check"></i> Approved</span>
+              {% elif leave.status == 'rejected' %}
+                <span class="status-pill pill-rejected"><i class="fa-solid fa-xmark"></i> Rejected</span>
+              {% else %}
+                <span class="status-pill pill-pending"><i class="fa-regular fa-clock"></i> Pending</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{{ url_for('manager.leave_detail', leave_id=leave.leave_id) }}" class="btn-review">
+                Review <i class="fa-solid fa-arrow-right"></i>
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5">
+              <div class="empty-state-container">
+                <div class="empty-icon-circle"><i class="fa-solid fa-calendar-check"></i></div>
+                <h4 class="empty-title">No Active Leave Applications Found</h4>
+                <p class="empty-desc">There are currently no pending or historical leave applications matching your search query. When interns submit applications for time off or sick leave, they will appear here for review.</p>
+                
+                <div class="policy-guide-card">
+                  <div class="policy-title"><i class="fa-solid fa-scale-balanced" style="color:#7c3aed;"></i> Leave Quota & Absence Policy Guidelines</div>
+                  <div class="policy-grid">
+                    <div class="policy-item">
+                      <div class="p-icon"><i class="fa-solid fa-calendar-plus"></i></div>
+                      <div>
+                        <strong>Monthly Paid Quota</strong>
+                        <span>Interns accrue 1.5 paid leave days per completed month of service.</span>
+                      </div>
+                    </div>
+                    <div class="policy-item">
+                      <div class="p-icon" style="background:#dcfce7; color:#15803d;"><i class="fa-solid fa-check-double"></i></div>
+                      <div>
+                        <strong>Advance Notice Rule</strong>
+                        <span>Planned absences require 48-hour prior submission and manager review.</span>
+                      </div>
+                    </div>
+                    <div class="policy-item">
+                      <div class="p-icon" style="background:#fee2e2; color:#dc2626;"><i class="fa-solid fa-notes-medical"></i></div>
+                      <div>
+                        <strong>Medical Leave Verification</strong>
+                        <span>Sick leave exceeding 2 consecutive days requires a medical certificate.</span>
+                      </div>
+                    </div>
+                    <div class="policy-item">
+                      <div class="p-icon" style="background:#fef9c3; color:#a16207;"><i class="fa-solid fa-umbrella-beach"></i></div>
+                      <div>
+                        <strong>Weekend Exemption</strong>
+                        <span>Official company holidays and weekends are automatically excluded from leave counts.</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if total_pages > 1 %}
+    <div class="pagination-bar">
+      <span style="font-size: 0.85rem; color: #64748b; font-weight: 600;">Showing Page <strong>{{ page }}</strong> of {{ total_pages }}</span>
+      <div style="display: flex; gap: 0.5rem;">
+        {% if page > 1 %}
+          <a href="{{ url_for('manager.leaves', page=page-1, search=search) }}" class="btn-page">← Previous Page</a>
+        {% else %}
+          <span class="btn-page" disabled>← Previous Page</span>
+        {% endif %}
+        
+        {% if page < total_pages %}
+          <a href="{{ url_for('manager.leaves', page=page+1, search=search) }}" class="btn-page">Next Page →</a>
+        {% else %}
+          <span class="btn-page" disabled>Next Page →</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+</div><!-- /hrm-page -->
+{% endblock %}

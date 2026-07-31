@@ -1,0 +1,1323 @@
+{% extends "base_manager.html" %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+{# ══════════════════════════════════════════════════════════════════════════
+   COMPUTED TEMPLATE VARIABLES
+   ══════════════════════════════════════════════════════════════════════════ #}
+
+{# Average attendance across departments #}
+{% set avg_ns = namespace(total=0, count=0) %}
+{% for dept in dept_stats %}
+  {% set avg_ns.total = avg_ns.total + dept.avg_attendance_pct %}
+  {% set avg_ns.count = avg_ns.count + 1 %}
+{% endfor %}
+{% set avg_att_pct = (avg_ns.total / avg_ns.count) | round(0) | int if avg_ns.count > 0 else 0 %}
+
+{# Today attendance counts #}
+{% set td = namespace(present=0, leave=0, absent=0) %}
+{% for s in students %}
+  {% if s.get('today_attendance_status') == 'Present' %}{% set td.present = td.present + 1 %}
+  {% elif s.get('today_attendance_status') == 'On Leave' %}{% set td.leave = td.leave + 1 %}
+  {% elif s.get('today_attendance_status') == 'Absent' %}{% set td.absent = td.absent + 1 %}
+  {% endif %}
+{% endfor %}
+
+{# Active vs at-risk #}
+{% set at_risk_count = summary.at_risk | length %}
+{% set active_count = [total_interns_count - at_risk_count, 0] | max %}
+{% set today_other = [total_interns_count - td.present - td.leave - td.absent, 0] | max %}
+
+{# Active % for bar widths #}
+{% set active_pct = ((active_count / total_interns_count * 100) | round(0) | int) if total_interns_count > 0 else 0 %}
+{% set risk_pct   = ((at_risk_count  / total_interns_count * 100) | round(0) | int) if total_interns_count > 0 else 0 %}
+
+
+<div class="hrm-dash">
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     DASHBOARD STYLES
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<style>
+/* ── Layout ── */
+.hrm-dash { padding: 1.75rem 2rem 2.5rem; background: #f8fafc; min-height: 100%; max-width: 1650px; margin: 0 auto; }
+
+/* ── Greeting Row ── */
+.greet-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem; }
+.greet-title { font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0; font-family: var(--font-sans); }
+.greet-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+
+.date-pill {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 2rem;
+  padding: 0.5rem 1rem; font-size: 0.8rem; color: #475569; cursor: pointer;
+  white-space: nowrap; transition: border-color .2s;
+}
+.date-pill:hover { border-color: #7c3aed; }
+.date-pill i { color: #7c3aed; }
+.date-preset-btn {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem;
+  padding: 0.45rem 0.75rem; font-size: 0.8rem; font-weight: 500; color: #334155;
+  text-align: left; cursor: pointer; transition: all 0.15s; width: 100%;
+}
+.date-preset-btn:hover, .date-preset-btn.active {
+  background: #f3e8ff; border-color: #d8b4fe; color: #7c3aed; font-weight: 600;
+}
+
+.btn-export-data {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: #7c3aed; color: #fff; border: none; border-radius: 2rem;
+  padding: 0.55rem 1.35rem; font-size: 0.875rem; font-weight: 600;
+  cursor: pointer; text-decoration: none !important; transition: background .2s, transform .15s;
+}
+.btn-export-data:hover { background: #6d28d9; color: #fff; transform: translateY(-1px); }
+.btn-export-data i { font-size: 0.78rem; }
+
+/* ── Stat Cards ── */
+.stat-cards-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+@media (max-width: 1400px) { .stat-cards-row { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 800px)  { .stat-cards-row { grid-template-columns: 1fr; } }
+
+.stat-card {
+  background: #fff; border-radius: 1rem;
+  padding: 1.35rem 1.5rem; border: 1px solid #f0f0f0;
+  box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  position: relative; transition: box-shadow .2s;
+}
+.stat-card-title { font-size: 0.75rem; font-weight: 700; color: #94a3b8; margin: 0 0 1rem; letter-spacing: .03em; }
+
+/* Total Interns sub-rows */
+.stat-num-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.4rem; }
+.stat-big-num { font-size: 2rem; font-weight: 800; color: #0f172a; line-height: 1; }
+.stat-big-num.sm { font-size: 1.5rem; }
+.stat-chip-up   { display: inline-flex; align-items: center; gap: .25rem; background: #dcfce7; color: #16a34a; font-size: .68rem; font-weight: 700; border-radius: 1rem; padding: .18rem .6rem; }
+.stat-chip-down { display: inline-flex; align-items: center; gap: .25rem; background: #fee2e2; color: #dc2626; font-size: .68rem; font-weight: 700; border-radius: 1rem; padding: .18rem .6rem; }
+.stat-type-label { font-size: .75rem; font-weight: 600; margin-left: auto; }
+
+.stat-bar-track { height: 5px; border-radius: 3px; background: #f1f5f9; margin-bottom: .35rem; overflow: hidden; }
+.stat-bar-fill  { height: 100%; border-radius: 3px; transition: width .8s cubic-bezier(.22,1,.36,1); }
+.stat-sub-text  { font-size: .7rem; color: #94a3b8; }
+
+.stat-divider { border: none; border-top: 1px solid #f1f5f9; margin: 1rem 0; }
+
+/* Attendance card */
+.att-big { font-size: 2.6rem; font-weight: 900; color: #0f172a; line-height: 1; margin-bottom: .3rem; }
+.att-trend-row { display: flex; align-items: center; gap: .5rem; margin-bottom: .9rem; }
+.att-up-chip { font-size: .72rem; color: #10b981; font-weight: 700; }
+.att-since    { font-size: .72rem; color: #94a3b8; }
+
+.att-multibar { height: 8px; border-radius: 4px; background: #f1f5f9; display: flex; overflow: hidden; margin-bottom: .9rem; }
+.att-seg { height: 100%; transition: width .8s cubic-bezier(.22,1,.36,1); }
+
+.att-legend { display: flex; flex-wrap: wrap; gap: .75rem; }
+.att-legend-item { display: flex; align-items: center; gap: .35rem; font-size: .7rem; color: #64748b; }
+.att-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* Today's Status card */
+.today-wrap { display: flex; align-items: center; gap: 1.5rem; }
+.today-donut-wrap { position: relative; width: 92px; height: 92px; flex-shrink: 0; }
+.today-donut-center {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  text-align: center; pointer-events: none;
+}
+.today-donut-num  { font-size: 1.3rem; font-weight: 800; color: #0f172a; line-height: 1; }
+.today-donut-sub  { font-size: .6rem; color: #94a3b8; }
+
+.today-stat-list { display: flex; flex-direction: column; gap: .55rem; flex: 1; }
+.today-stat-row  { display: flex; align-items: center; gap: .6rem; font-size: .8rem; }
+.today-stat-dot  { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.today-stat-name { color: #475569; flex: 1; }
+.today-stat-num  { font-weight: 700; color: #0f172a; font-size: .85rem; }
+
+/* ── Middle Row ── */
+.mid-row { display: grid; grid-template-columns: 420px 1fr; gap: 1.25rem; margin-bottom: 1.5rem; }
+@media (max-width: 1150px) { .mid-row { grid-template-columns: 1fr; } }
+
+.mid-card {
+  background: #fff; border-radius: 1rem;
+  border: 1px solid #f0f0f0; box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  padding: 1.5rem; display: flex; flex-direction: column;
+  transition: box-shadow .2s;
+}
+.mid-card:hover { box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+.mid-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1rem; }
+.mid-card-title { font-size: .9rem; font-weight: 700; color: #0f172a; margin: 0; }
+
+
+/* Performance big stat */
+.perf-highlight { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.25rem; }
+.perf-big-num { font-size: 2.75rem; font-weight: 900; color: #0f172a; line-height: 1; flex-shrink: 0; }
+.perf-big-desc { font-size: .78rem; color: #64748b; line-height: 1.55; max-width: 200px; margin-top: .2rem; }
+
+.perf-chart-area { flex: 1; min-height: 200px; position: relative; }
+.chart-legend { display: flex; gap: 1.1rem; margin-top: .9rem; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: .35rem; font-size: .72rem; color: #64748b; }
+.legend-dot { width: 9px; height: 9px; border-radius: 50%; }
+
+/* Trend card header */
+.trend-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.trend-adv-link { font-size: .78rem; color: #7c3aed; font-weight: 600; display: flex; align-items: center; gap: .25rem; text-decoration: none !important; transition: color .15s; }
+.trend-adv-link:hover { color: #6d28d9; }
+
+.trend-chart-area { flex: 1; min-height: 230px; position: relative; }
+
+/* ── All Interns Table ── */
+.table-section {
+  background: #fff; border-radius: 1rem;
+  border: 1px solid #f0f0f0; box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  overflow: hidden;
+}
+
+.table-section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.25rem 1.5rem; flex-wrap: wrap; gap: 1rem;
+  border-bottom: 1px solid #f8fafc;
+}
+.table-section-title { font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0; }
+.table-controls { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+
+.tbl-search {
+  display: flex; align-items: center; gap: .5rem;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 2rem;
+  padding: .42rem 1rem; transition: border-color .2s;
+}
+.tbl-search:focus-within { border-color: #7c3aed; }
+.tbl-search i { color: #94a3b8; font-size: .82rem; }
+.tbl-search-input { border: none; background: transparent; outline: none; font-size: .8rem; color: #0f172a; width: 160px; font-family: var(--font-sans); }
+
+.tbl-select {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 2rem;
+  padding: .42rem 2rem .42rem 1rem; font-size: .8rem; color: #475569;
+  cursor: pointer; appearance: none; font-family: var(--font-sans);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right .6rem center; background-size: 1em;
+  transition: border-color .2s;
+}
+.tbl-select:focus { outline: none; border-color: #7c3aed; }
+
+
+/* Table itself */
+.intern-tbl { width: 100%; border-collapse: collapse; }
+.intern-tbl thead th {
+  font-size: .68rem; font-weight: 700; color: #94a3b8;
+  text-transform: uppercase; letter-spacing: .06em;
+  padding: .75rem 1rem; border-bottom: 1px solid #f1f5f9;
+  background: #fafafa; text-align: left; white-space: nowrap;
+}
+.intern-tbl thead th:first-child { padding-left: 1.5rem; width: 40px; }
+.intern-tbl thead th:last-child  { padding-right: 1.5rem; text-align: right; }
+
+.intern-tbl tbody tr { border-bottom: 1px solid #f8fafc; transition: background .13s; }
+.intern-tbl tbody tr:last-child { border-bottom: none; }
+.intern-tbl tbody tr:hover { background: #fafaff; }
+
+.intern-tbl td { padding: .9rem 1rem; vertical-align: middle; }
+.intern-tbl td:first-child { padding-left: 1.5rem; }
+.intern-tbl td:last-child  { padding-right: 1.5rem; text-align: right; }
+
+/* Cell components */
+.cell-id { font-size: .78rem; color: #64748b; font-family: 'Courier New', monospace; }
+
+.intern-avatar {
+  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  color: #fff; font-weight: 700; font-size: .82rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.cell-name   { font-weight: 600; font-size: .875rem; color: #0f172a; }
+.cell-sub    { font-size: .73rem; color: #94a3b8; margin-top: .1rem; }
+.cell-email  { font-size: .8rem; color: #64748b; }
+
+.dept-tag {
+  display: inline-block; background: #eff6ff; color: #1d4ed8;
+  border-radius: 1rem; padding: .2rem .7rem; font-size: .72rem; font-weight: 600;
+}
+
+/* Status pills */
+.pill-active {
+  display: inline-flex; align-items: center; gap: .3rem;
+  background: #dcfce7; color: #16a34a;
+  border-radius: 1rem; padding: .2rem .7rem; font-size: .72rem; font-weight: 600;
+}
+.pill-active::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #16a34a; }
+
+.pill-inactive {
+  display: inline-flex; align-items: center; gap: .3rem;
+  background: #fee2e2; color: #dc2626;
+  border-radius: 1rem; padding: .2rem .7rem; font-size: .72rem; font-weight: 600;
+}
+.pill-inactive::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #dc2626; }
+
+/* Action buttons */
+.btn-view {
+  background: none; border: 1px solid #e2e8f0; border-radius: .5rem;
+  padding: .3rem .5rem; color: #64748b; cursor: pointer;
+  transition: all .18s; font-size: .875rem; line-height: 1; display: inline-flex; align-items: center;
+}
+.btn-view:hover { border-color: #7c3aed; color: #7c3aed; background: #faf5ff; }
+
+.btn-more {
+  background: none; border: none; color: #94a3b8; cursor: pointer;
+  padding: .3rem .45rem; font-size: .875rem; border-radius: .375rem;
+  transition: color .15s; display: inline-flex; align-items: center;
+}
+.btn-more:hover { color: #475569; }
+
+.action-group { display: inline-flex; align-items: center; gap: .25rem; }
+
+/* Dropdown compat */
+.dropdown { position: relative; display: inline-block; }
+.dropdown-menu {
+  display: none; position: absolute; right: 0; top: calc(100% + 4px);
+  background: #fff; border: 1px solid #e2e8f0; border-radius: .625rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,.1); min-width: 170px; z-index: 300;
+  overflow: hidden;
+}
+.dropdown-menu.show { display: block; }
+.dropdown-menu li { list-style: none; }
+.dropdown-item {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .65rem 1rem; font-size: .82rem; color: #0f172a;
+  text-decoration: none !important; transition: background .13s; cursor: pointer;
+}
+.dropdown-item:hover { background: #f8fafc; }
+.dropdown-item.text-danger { color: #dc2626 !important; }
+.dropdown-item.text-danger:hover { background: #fff1f2; }
+.dropdown-divider { border: none; border-top: 1px solid #f1f5f9; margin: .25rem 0; }
+
+.no-data-row td { text-align: center; padding: 3rem; color: #94a3b8; font-size: .875rem; }
+
+/* ── Employee Card Grid View ── */
+.intern-grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+}
+.employee-ui-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.employee-ui-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+  border-color: #cbd5e1;
+}
+.emp-card-top {
+  padding: 1.25rem 1.25rem 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.emp-pill-type {
+  background: #eff6ff;
+  color: #3b82f6;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.28rem 0.8rem;
+  border-radius: 0.5rem;
+}
+.emp-more-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #64748b;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.emp-more-btn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+.emp-card-mid {
+  padding: 0.5rem 1.25rem 1.25rem;
+}
+.emp-user-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+.emp-avatar-lg {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+}
+.emp-name-txt {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.15rem;
+}
+.emp-email-txt {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+.emp-dept-badge {
+  margin-top: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+.emp-dept-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3b82f6;
+  display: inline-block;
+}
+.emp-card-bot {
+  margin-top: auto;
+  border-top: 1px solid #f1f5f9;
+  padding: 1rem 1.25rem;
+  background: #fcfcfd;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.emp-bot-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+.emp-bot-lbl {
+  color: #64748b;
+  font-weight: 500;
+}
+.emp-bot-val {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.view-switcher-group {
+  display: flex;
+  background: #f1f5f9;
+  padding: 0.2rem;
+  border-radius: 0.6rem;
+  border: 1px solid #e2e8f0;
+}
+.btn-view-mode {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  padding: 0.38rem 0.85rem;
+  border-radius: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.15s;
+}
+.btn-view-mode.active {
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* ── Main Dashboard Layout (Left: Interns, Right: Charts) ── */
+.dashboard-main-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .dashboard-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     1. GREETING ROW
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="greet-row">
+  <h1 class="greet-title">
+    <span id="timeGreet">Good Morning</span>, {{ g.user.name }}
+  </h1>
+  <div class="greet-actions">
+    <div class="date-pill" id="datePillBtn" style="position: relative; user-select: none;">
+      <i class="fa-regular fa-calendar"></i>
+      <span id="greetDateRange">Loading…</span>
+      <i class="fa-solid fa-chevron-down" style="font-size:.65rem; opacity:.6;"></i>
+
+      <!-- Date Picker Popover -->
+      <div id="datePillPopover" style="display: none; position: absolute; top: calc(100% + 8px); right: 0; background: #fff; border: 1px solid #cbd5e1; border-radius: 1rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); padding: 1rem; z-index: 1050; width: 280px; text-align: left; cursor: default;">
+        <div style="font-weight: 700; font-size: 0.85rem; color: #0f172a; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+          <span>Select Time Period</span>
+          <i class="fa-solid fa-xmark" id="closeDatePopover" style="cursor: pointer; color: #64748b; padding: 0.2rem;"></i>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.75rem;">
+          <button type="button" class="date-preset-btn" data-preset="this_month">This Month</button>
+          <button type="button" class="date-preset-btn" data-preset="last_30">Last 30 Days</button>
+          <button type="button" class="date-preset-btn" data-preset="last_month">Previous Month</button>
+          <button type="button" class="date-preset-btn" data-preset="this_year">This Year (YTD)</button>
+          <button type="button" class="date-preset-btn" data-preset="custom">Custom Range...</button>
+        </div>
+        <div id="customDateRangeBox" style="display: none; border-top: 1px solid #f1f5f9; padding-top: 0.75rem; flex-direction: column; gap: 0.5rem;">
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 600; color: #64748b; display: block; margin-bottom: 0.2rem;">Start Date</label>
+            <input type="date" id="customStartDate" class="form-control" style="font-size: 0.8rem; padding: 0.35rem 0.5rem; border-radius: 0.4rem; border: 1px solid #cbd5e1; width: 100%;">
+          </div>
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 600; color: #64748b; display: block; margin-bottom: 0.2rem;">End Date</label>
+            <input type="date" id="customEndDate" class="form-control" style="font-size: 0.8rem; padding: 0.35rem 0.5rem; border-radius: 0.4rem; border: 1px solid #cbd5e1; width: 100%;">
+          </div>
+          <button type="button" id="applyCustomDateBtn" style="background: #7c3aed; color: #fff; border: none; border-radius: 0.5rem; padding: 0.45rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; margin-top: 0.25rem; transition: background 0.15s;">Apply Range</button>
+        </div>
+      </div>
+    </div>
+    <a href="#" class="btn-export-data" id="exportTopBtn">
+      <i class="fa-solid fa-arrow-up-from-bracket"></i> Export Data
+    </a>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     2. STAT CARDS ROW
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="stat-cards-row">
+
+  <!-- Card 1 · Total Interns -->
+  <div class="stat-card">
+    <p class="stat-card-title">Total Interns</p>
+
+    <div class="stat-num-row">
+      <span class="stat-big-num">{{ total_interns_count }}</span>
+      {% if new_joiners_count > 0 %}
+      <span class="stat-chip-up"><i class="fa-solid fa-arrow-trend-up"></i> +{{ new_joiners_count }}</span>
+      {% endif %}
+      <span class="stat-type-label" style="color:#7c3aed;">Active</span>
+    </div>
+    <div class="stat-bar-track">
+      <div class="stat-bar-fill" style="width:{{ active_pct }}%; background:#7c3aed;"></div>
+    </div>
+    <p class="stat-sub-text">Active interns currently enrolled</p>
+
+    <hr class="stat-divider">
+
+    <div class="stat-num-row">
+      <span class="stat-big-num sm">{{ at_risk_count }}</span>
+      <span class="stat-type-label" style="color:#f97316;">At Risk</span>
+    </div>
+    <div class="stat-bar-track">
+      <div class="stat-bar-fill" style="width:{{ risk_pct }}%; background:#f97316;"></div>
+    </div>
+    <p class="stat-sub-text">Attendance below 75%</p>
+  </div>
+
+  <!-- Card 2 · Attendance Overview -->
+  <div class="stat-card">
+    <p class="stat-card-title">Attendance Overview</p>
+
+    <div class="att-big">{{ average_attendance_percent }}%</div>
+    <div class="att-trend-row">
+      {% if new_joiners_count > 0 %}
+      <span class="att-up-chip"><i class="fa-solid fa-arrow-trend-up"></i> +{{ new_joiners_count }} new joiners</span>
+      {% endif %}
+      <span class="att-since">since last month</span>
+    </div>
+
+    <!-- Department attendance bars -->
+    <div class="att-multibar">
+      {% set colors = ['#7c3aed','#10b981','#f59e0b','#3b82f6','#ef4444','#8b5cf6'] %}
+      {% for dept in dept_stats %}
+        {% set seg_w = (dept.avg_attendance_pct / (dept_stats | length if dept_stats | length > 0 else 1)) | round(1) %}
+        <div class="att-seg" style="width:{{ seg_w }}%; background:{{ colors[loop.index0 % 6] }};"></div>
+      {% endfor %}
+      <div class="att-seg" style="flex:1; background:#f1f5f9;"></div>
+    </div>
+
+    <div class="att-legend">
+      {% for dept in dept_stats %}
+      <div class="att-legend-item">
+        <div class="att-legend-dot" style="background:{{ colors[loop.index0 % 6] }};"></div>
+        {{ dept.name }} ({{ dept.avg_attendance_pct }}%)
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Card 3 · Today's Attendance -->
+  <div class="stat-card">
+    <p class="stat-card-title">Today's Attendance</p>
+
+    <div class="today-wrap">
+      <div class="today-donut-wrap">
+        <canvas id="todayDonut" width="92" height="92"></canvas>
+        <div class="today-donut-center">
+          <div class="today-donut-num">{{ td.present }}</div>
+          <div class="today-donut-sub">Present</div>
+        </div>
+      </div>
+
+      <div class="today-stat-list">
+        <div class="today-stat-row">
+          <div class="today-stat-dot" style="background:#7c3aed;"></div>
+          <span class="today-stat-name">Present</span>
+          <span class="today-stat-num">{{ td.present }}</span>
+        </div>
+        <div class="today-stat-row">
+          <div class="today-stat-dot" style="background:#f59e0b;"></div>
+          <span class="today-stat-name">On Leave</span>
+          <span class="today-stat-num">{{ td.leave }}</span>
+        </div>
+        <div class="today-stat-row">
+          <div class="today-stat-dot" style="background:#ef4444;"></div>
+          <span class="today-stat-name">Absent</span>
+          <span class="today-stat-num">{{ td.absent }}</span>
+        </div>
+        <div class="today-stat-row">
+          <div class="today-stat-dot" style="background:#cbd5e1;"></div>
+          <span class="today-stat-name">Not Marked</span>
+          <span class="today-stat-num">{{ today_other }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 4 · Action Items & Alerts -->
+  <div class="stat-card">
+    <p class="stat-card-title">Action Items & Alerts</p>
+
+    <div class="today-stat-list" style="gap: 0.85rem; justify-content: center; margin-top: 0.5rem;">
+      <div class="today-stat-row" style="justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <div class="today-stat-dot" style="background:#f59e0b;"></div>
+          <span class="today-stat-name">Pending Leaves</span>
+        </div>
+        <span class="today-stat-num" style="background:#fef3c7; color:#d97706; padding:0.15rem 0.55rem; border-radius:1rem; font-size:0.75rem;">{{ pending_leaves | length }}</span>
+      </div>
+      <div class="today-stat-row" style="justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <div class="today-stat-dot" style="background:#3b82f6;"></div>
+          <span class="today-stat-name">Pending Reports</span>
+        </div>
+        <span class="today-stat-num" style="background:#dbeafe; color:#2563eb; padding:0.15rem 0.55rem; border-radius:1rem; font-size:0.75rem;">{{ pending_reports | length }}</span>
+      </div>
+      <div class="today-stat-row" style="justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <div class="today-stat-dot" style="background:#7c3aed;"></div>
+          <span class="today-stat-name">Departments</span>
+        </div>
+        <span class="today-stat-num" style="background:#f3e8ff; color:#7c3aed; padding:0.15rem 0.55rem; border-radius:1rem; font-size:0.75rem;">{{ departments_covered }}</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /stat-cards-row -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     4. ALL INTERNS TABLE
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="table-section" style="margin-bottom: 2rem;">
+
+  <!-- Header controls -->
+  <div class="table-section-header">
+    <h3 class="table-section-title">All Interns</h3>
+    <div class="table-controls">
+      <div class="tbl-search">
+        <i class="fa-solid fa-search"></i>
+        <input type="text" class="tbl-search-input" id="tblSearch" placeholder="Search Intern…">
+      </div>
+
+      <select class="tbl-select" id="tblStatusFilter">
+        <option value="all">All Status ▾</option>
+        <option value="present">Present Today</option>
+        <option value="leave">On Leave</option>
+        <option value="absent">Absent</option>
+        <option value="active">Active</option>
+      </select>
+
+      <select class="tbl-select" id="tblDeptFilter">
+        <option value="all">All Dept ▾</option>
+        {% for d in students | map(attribute='department') | unique %}
+          {% if d %}
+          <option value="{{ d }}">{{ d }}</option>
+          {% endif %}
+        {% endfor %}
+      </select>
+
+
+      <div class="view-switcher-group">
+        <button type="button" class="btn-view-mode active" id="btnGridMode" onclick="switchView('grid')" title="Card Grid View">
+          <i class="fa-solid fa-grid-2"></i> Grid
+        </button>
+        <button type="button" class="btn-view-mode" id="btnTableMode" onclick="switchView('table')" title="Table List View">
+          <i class="fa-solid fa-list"></i> Table
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grid View (Default) -->
+  <div class="intern-grid-container" id="internGridView">
+    {% for student in students %}
+    <div class="employee-ui-card intern-grid-item"
+         data-name="{{ student.get('name','')|lower }}"
+         data-email="{{ student.get('email','')|lower }}"
+         data-dept="{{ student.get('department','') }}"
+         data-status="{% if student.get('today_attendance_status') == 'Present' %}present{% elif student.get('today_attendance_status') == 'On Leave' %}leave{% elif student.get('today_attendance_status') == 'Absent' %}absent{% else %}active{% endif %}">
+
+      <div class="emp-card-top">
+        <span class="emp-pill-type">{{ student.get('duration_text', 'Full-time') }}</span>
+        <div class="dropdown">
+          <button class="emp-more-btn" onclick="toggleDropdown(this)" title="More actions">
+            <i class="fa-solid fa-ellipsis-vertical"></i>
+          </button>
+          <ul class="dropdown-menu">
+            <li>
+              <a class="dropdown-item" href="{{ url_for('manager.student_detail', intern_id=student.id) }}">
+                <i class="fa-regular fa-eye" style="color:#64748b;"></i> View Profile
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{ url_for('manager.performance') }}">
+                <i class="fa-regular fa-star" style="color:#64748b;"></i> Performance
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{ url_for('manager.extensions') }}">
+                <i class="fa-solid fa-clock-rotate-left" style="color:#64748b;"></i> Extend
+              </a>
+            </li>
+            <li><div class="dropdown-divider"></div></li>
+            <li>
+              <a class="dropdown-item text-danger" href="#" onclick="confirmDeactivate('{{ student.id }}'); return false;">
+                <i class="fa-solid fa-user-slash"></i> Terminate
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="emp-card-mid">
+        <div class="emp-user-row">
+          <div class="emp-avatar-lg">{{ student.get('name','??')[:2]|upper }}</div>
+          <div>
+            <div class="emp-name-txt">{{ student.get('name','Unknown') }}</div>
+            <div class="emp-email-txt" title="{{ student.get('email','') }}">{{ student.get('email','N/A') }}</div>
+          </div>
+        </div>
+        <div class="emp-dept-badge">
+          <span class="emp-dept-dot"></span>
+          {{ student.get('department','General') }} <span style="color: #cbd5e1; margin: 0 0.3rem;">|</span> Intern
+        </div>
+      </div>
+
+      <div class="emp-card-bot">
+        <div class="emp-bot-row">
+          <span class="emp-bot-lbl">RGT ID</span>
+          <span class="emp-bot-val">{{ student.get('intern_id','N/A') }}</span>
+        </div>
+        <div class="emp-bot-row">
+          <span class="emp-bot-lbl">Join Date</span>
+          <span class="emp-bot-val">{{ student.get('joining_date') or 'Not Set' }}</span>
+        </div>
+      </div>
+
+    </div>
+    {% else %}
+    <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: #94a3b8; font-weight: 500;">
+      No interns found in your department.
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Table View (Hidden by default) -->
+  <div id="internTableView" style="display: none; overflow-x:auto;">
+    <table class="intern-tbl" id="internTable">
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="selectAllChk" style="cursor:pointer; width:15px; height:15px;"></th>
+          <th>RGT ID</th>
+          <th>Intern Name</th>
+          <th>Email</th>
+          <th>Role &amp; Duration</th>
+          <th>Department</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for student in students %}
+        <tr class="intern-row"
+            data-name="{{ student.get('name','')|lower }}"
+            data-email="{{ student.get('email','')|lower }}"
+            data-dept="{{ student.get('department','') }}"
+            data-status="{% if student.get('today_attendance_status') == 'Present' %}present{% elif student.get('today_attendance_status') == 'On Leave' %}leave{% elif student.get('today_attendance_status') == 'Absent' %}absent{% else %}active{% endif %}"
+            data-active="{{ student.get('status','active') }}">
+
+          <td><input type="checkbox" class="row-chk" style="cursor:pointer; width:15px; height:15px;"></td>
+
+          <td><span class="cell-id">{{ student.get('intern_id','N/A') }}</span></td>
+
+          <td>
+            <div style="display:flex; align-items:center; gap:.75rem;">
+              <div class="intern-avatar">{{ student.get('name','??')[:2]|upper }}</div>
+              <div>
+                <div class="cell-name">{{ student.get('name','Unknown') }}</div>
+                <div class="cell-sub">Joined: {{ student.get('joining_date') or 'Not Set' }}</div>
+              </div>
+            </div>
+          </td>
+
+          <td><span class="cell-email">{{ student.get('email','N/A') }}</span></td>
+
+          <td>
+            <div class="cell-name" style="font-size:.82rem;">{{ student.get('duration_text','—') }}</div>
+            <div class="cell-sub">{{ student.get('days_remaining_text','') }}</div>
+          </td>
+
+          <td><span class="dept-tag">{{ student.get('department','N/A') }}</span></td>
+
+          <td>
+            {% if student.get('status','active') == 'active' %}
+              <span class="pill-active">Active</span>
+            {% else %}
+              <span class="pill-inactive">Inactive</span>
+            {% endif %}
+          </td>
+
+          <td>
+            <div class="action-group">
+              <a href="{{ url_for('manager.student_detail', intern_id=student.id) }}"
+                 class="btn-view" title="View Profile">
+                <i class="fa-regular fa-eye"></i>
+              </a>
+              <div class="dropdown">
+                <button class="btn-more" onclick="toggleDropdown(this)" title="More actions">
+                  <i class="fa-solid fa-ellipsis-vertical"></i>
+                </button>
+                <ul class="dropdown-menu">
+                  <li>
+                    <a class="dropdown-item"
+                       href="{{ url_for('manager.performance') }}">
+                      <i class="fa-regular fa-star" style="color:#64748b;"></i> Performance
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item"
+                       href="{{ url_for('manager.extensions') }}">
+                      <i class="fa-solid fa-clock-rotate-left" style="color:#64748b;"></i> Extend
+                    </a>
+                  </li>
+                  <li><div class="dropdown-divider"></div></li>
+                  <li>
+                    <a class="dropdown-item text-danger" href="#"
+                       onclick="confirmDeactivate('{{ student.id }}'); return false;">
+                      <i class="fa-solid fa-user-slash"></i> Terminate
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </td>
+
+        </tr>
+        {% else %}
+        <tr class="no-data-row"><td colspan="8">No interns found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- /table-section -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     3. MIDDLE ROW: Performance Chart + Attendance Trend
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="mid-row">
+
+  <!-- LEFT · Intern Performance Ratings -->
+  <div class="mid-card">
+    <div class="mid-card-top">
+      <h3 class="mid-card-title">Intern Performance Ratings</h3>
+    </div>
+
+    <div class="perf-highlight">
+      <div class="perf-big-num">{{ average_attendance_percent }}%</div>
+      <p class="perf-big-desc">
+        At RGTvertex, we track intern attendance, performance and engagement across all departments.
+      </p>
+    </div>
+
+    <div class="perf-chart-area">
+      <canvas id="perfChart"></canvas>
+    </div>
+
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#7c3aed;"></div>Attendance %</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#10b981;"></div>Performance score</div>
+    </div>
+  </div>
+
+  <!-- RIGHT · Attendance Statistics -->
+  <div class="mid-card">
+    <div class="trend-card-header">
+      <h3 class="mid-card-title">Attendance Statistics</h3>
+      <a href="{{ url_for('manager.reports') }}" class="trend-adv-link">
+        View Reports <i class="fa-solid fa-chevron-right" style="font-size:.6rem;"></i>
+      </a>
+    </div>
+
+    <div class="trend-chart-area">
+      <canvas id="trendChart"></canvas>
+    </div>
+
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#7c3aed;"></div>Attendance %</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ddd6fe;"></div>Month</div>
+    </div>
+  </div>
+
+</div><!-- /mid-row -->
+
+</div><!-- /hrm-dash -->
+
+<!-- Chart data from server (placed inside content block so Jinja variables are in scope) -->
+<script id="dash-json" type="application/json">
+{
+  "today_present": {{ td.present }},
+  "today_leave":   {{ td.leave }},
+  "today_absent":  {{ td.absent }},
+  "today_other":   {{ today_other }},
+  "trend_labels":  {{ trend['labels'] | tojson | safe }},
+  "trend_values":  {{ trend['values'] | tojson | safe }},
+  "perf_labels": [
+    {%- for s in students[:8] -%}
+    "{{ s.get('name','Intern') | replace('"','') | truncate(14,True,'…') }}"
+    {%- if not loop.last %},{%- endif -%}
+    {%- endfor -%}
+  ],
+  "perf_att": [
+    {%- for s in students[:8] -%}
+    {{ s.get('att_summary',{}).get('attendance_percent',0) if s.get('att_summary') else 0 }}
+    {%- if not loop.last %},{%- endif -%}
+    {%- endfor -%}
+  ],
+  "perf_score": [
+    {%- for s in students[:8] -%}
+    {%- set r = s.get('latest_performance',{}).get('rating','') if s.get('latest_performance') else '' -%}
+    {%- if r == 'Excellent' %}95{%- elif r == 'Good' %}80{%- elif r in ['Average','Satisfactory'] %}65{%- elif r == 'Need Improvement' %}45{%- else %}55{%- endif -%}
+    {%- if not loop.last %},{%- endif -%}
+    {%- endfor -%}
+  ]
+}
+</script>
+
+{% endblock %}
+
+
+{% block scripts %}
+{{ super() }}
+
+<!-- Bootstrap JS for any BS-dependent components -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const D = JSON.parse(document.getElementById('dash-json').textContent);
+
+  /* ── Time-based greeting ─────────────────────────────────────────────────── */
+  const hr = new Date().getHours();
+  document.getElementById('timeGreet').textContent =
+    hr < 12 ? 'Good Morning' : hr < 17 ? 'Good Afternoon' : 'Good Evening';
+
+  /* ── Date range picker & display ─────────────────────────────────────────── */
+  const params = new URLSearchParams(window.location.search);
+  const paramStart = params.get('start_date');
+  const paramEnd = params.get('end_date');
+  const now = new Date();
+  const fmt = d => d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+
+  let start, end;
+  if (paramStart && paramEnd) {
+    start = new Date(paramStart);
+    end = new Date(paramEnd);
+  } else {
+    start = new Date(now.getFullYear(), now.getMonth(), 1);
+    end = now;
+  }
+  document.getElementById('greetDateRange').textContent = fmt(start) + ' – ' + fmt(end);
+
+  const pillBtn = document.getElementById('datePillBtn');
+  const popover = document.getElementById('datePillPopover');
+  const closeBtn = document.getElementById('closeDatePopover');
+  const customBox = document.getElementById('customDateRangeBox');
+  const presetBtns = document.querySelectorAll('.date-preset-btn');
+
+  if (pillBtn && popover) {
+    pillBtn.addEventListener('click', function(e) {
+      if (!popover.contains(e.target)) {
+        popover.style.display = (popover.style.display === 'none' || !popover.style.display) ? 'block' : 'none';
+      }
+    });
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        popover.style.display = 'none';
+      });
+    }
+
+    document.addEventListener('click', function(e) {
+      if (!pillBtn.contains(e.target)) {
+        popover.style.display = 'none';
+      }
+    });
+
+    const toYMD = d => d.toISOString().slice(0, 10);
+    const applyDates = (s, e) => {
+      const u = new URL(window.location.href);
+      u.searchParams.set('start_date', toYMD(s));
+      u.searchParams.set('end_date', toYMD(e));
+      window.location.href = u.toString();
+    };
+
+    presetBtns.forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const preset = this.getAttribute('data-preset');
+        let s = new Date(now), eDate = new Date(now);
+
+        if (preset === 'this_month') {
+          s = new Date(now.getFullYear(), now.getMonth(), 1);
+        } else if (preset === 'last_30') {
+          s.setDate(now.getDate() - 30);
+        } else if (preset === 'last_month') {
+          s = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          eDate = new Date(now.getFullYear(), now.getMonth(), 0);
+        } else if (preset === 'this_year') {
+          s = new Date(now.getFullYear(), 0, 1);
+        } else if (preset === 'custom') {
+          presetBtns.forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+          customBox.style.display = 'flex';
+          return;
+        }
+
+        applyDates(s, eDate);
+      });
+    });
+
+    const applyCustomBtn = document.getElementById('applyCustomDateBtn');
+    if (applyCustomBtn) {
+      applyCustomBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const sVal = document.getElementById('customStartDate').value;
+        const eVal = document.getElementById('customEndDate').value;
+        if (sVal && eVal) {
+          applyDates(new Date(sVal), new Date(eVal));
+        } else {
+          alert('Please select both a Start Date and an End Date.');
+        }
+      });
+    }
+  }
+
+
+  /* ── Today Donut ─────────────────────────────────────────────────────────── */
+  const donutCtx = document.getElementById('todayDonut');
+  if (donutCtx) {
+    new Chart(donutCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Present','On Leave','Absent','Not Marked'],
+        datasets: [{
+          data: [D.today_present, D.today_leave, D.today_absent, D.today_other],
+          backgroundColor: ['#7c3aed','#f59e0b','#ef4444','#e2e8f0'],
+          borderWidth: 0,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: '70%',
+        plugins: { legend: { display: false }, tooltip: { boxPadding: 4 } }
+      }
+    });
+  }
+
+  /* ── Performance Horizontal Bar Chart ───────────────────────────────────── */
+  const perfCtx = document.getElementById('perfChart');
+  if (perfCtx) {
+    new Chart(perfCtx, {
+      type: 'bar',
+      data: {
+        labels: D.perf_labels,
+        datasets: [
+          {
+            label: 'Attendance %',
+            data: D.perf_att,
+            backgroundColor: '#7c3aed',
+            borderRadius: 4,
+            borderSkipped: false,
+            barThickness: 8
+          },
+          {
+            label: 'Performance score',
+            data: D.perf_score,
+            backgroundColor: '#10b981',
+            borderRadius: 4,
+            borderSkipped: false,
+            barThickness: 8
+          }
+        ]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { boxPadding: 4, callbacks: { label: c => ' ' + c.parsed.x + (c.datasetIndex === 0 ? '%' : ' pts') } }
+        },
+        scales: {
+          x: {
+            beginAtZero: true, max: 100,
+            grid: { color: '#f8fafc', drawBorder: false },
+            ticks: { font: { size: 10 }, color: '#94a3b8', callback: v => v + (v % 10 === 0 ? '' : '') }
+          },
+          y: {
+            grid: { display: false },
+            ticks: { font: { size: 11 }, color: '#475569' }
+          }
+        }
+      }
+    });
+  }
+
+  /* ── Monthly Attendance Trend Bar Chart ─────────────────────────────────── */
+  const trendCtx = document.getElementById('trendChart');
+  if (trendCtx) {
+    new Chart(trendCtx, {
+      type: 'bar',
+      data: {
+        labels: D.trend_labels,
+        datasets: [
+          {
+            label: 'Attendance %',
+            data: D.trend_values,
+            backgroundColor: function(ctx) {
+              const chart = ctx.chart;
+              const { ctx: c, chartArea } = chart;
+              if (!chartArea) return '#7c3aed';
+              const g = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+              g.addColorStop(0, '#7c3aed');
+              g.addColorStop(1, '#c4b5fd');
+              return g;
+            },
+            borderRadius: 6,
+            borderSkipped: false,
+            barPercentage: .55
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: items => items[0].label,
+              label: c => ' Attendance: ' + c.parsed.y + '%'
+            },
+            backgroundColor: '#fff',
+            borderColor: '#e2e8f0',
+            borderWidth: 1,
+            titleColor: '#0f172a',
+            bodyColor: '#475569',
+            padding: 10,
+            boxPadding: 4
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true, max: 100,
+            grid: { color: '#f8fafc', drawBorder: false },
+            ticks: { font: { size: 10 }, color: '#94a3b8', callback: v => v + '%' }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 10 }, color: '#94a3b8' }
+          }
+        }
+      }
+    });
+  }
+
+  /* ── Table filtering ─────────────────────────────────────────────────────── */
+  const searchIn  = document.getElementById('tblSearch');
+  const statusSel = document.getElementById('tblStatusFilter');
+  const deptSel   = document.getElementById('tblDeptFilter');
+  const allRows   = document.querySelectorAll('.intern-row, .intern-grid-item');
+
+  function applyFilters() {
+    const q      = searchIn.value.toLowerCase();
+    const status = statusSel.value;
+    const dept   = deptSel.value;
+    allRows.forEach(row => {
+      const matchQ    = row.dataset.name.includes(q) || row.dataset.email.includes(q);
+      const matchStat = status === 'all' || row.dataset.status === status || (status === 'active' && row.dataset.active === 'active');
+      const matchDept = dept === 'all' || row.dataset.dept === dept;
+      row.style.display = (matchQ && matchStat && matchDept) ? '' : 'none';
+    });
+  }
+
+  searchIn.addEventListener('input', applyFilters);
+  statusSel.addEventListener('change', applyFilters);
+  deptSel.addEventListener('change', applyFilters);
+
+  /* ── Select all checkboxes ───────────────────────────────────────────────── */
+  document.getElementById('selectAllChk').addEventListener('change', function() {
+    document.querySelectorAll('.row-chk').forEach(cb => {
+      if (cb.closest('tr').style.display !== 'none') cb.checked = this.checked;
+    });
+  });
+
+  /* ── Export Data button (top) ────────────────────────────────────────────── */
+  document.getElementById('exportTopBtn').addEventListener('click', function(e) {
+    doCSVExport(e);
+  });
+
+
+  /* ── Close dropdowns on outside click ───────────────────────────────────── */
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.dropdown')) {
+      document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
+    }
+  });
+});
+
+/* ── View Switcher ───────────────────────────────────────────────────────── */
+function switchView(mode) {
+  const grid = document.getElementById('internGridView');
+  const tbl  = document.getElementById('internTableView');
+  const btnG = document.getElementById('btnGridMode');
+  const btnT = document.getElementById('btnTableMode');
+  if (!grid || !tbl) return;
+  if (mode === 'grid') {
+    grid.style.display = 'grid';
+    tbl.style.display = 'none';
+    if (btnG) btnG.classList.add('active');
+    if (btnT) btnT.classList.remove('active');
+  } else {
+    grid.style.display = 'none';
+    tbl.style.display = 'block';
+    if (btnT) btnT.classList.add('active');
+    if (btnG) btnG.classList.remove('active');
+  }
+}
+
+/* ── Dropdown toggle ─────────────────────────────────────────────────────── */
+function toggleDropdown(btn) {
+  const menu = btn.nextElementSibling;
+  document.querySelectorAll('.dropdown-menu.show').forEach(m => {
+    if (m !== menu) m.classList.remove('show');
+  });
+  menu.classList.toggle('show');
+}
+
+/* ── Terminate confirmation ──────────────────────────────────────────────── */
+function confirmDeactivate(id) {
+  Swal.fire({
+    title: 'Terminate Intern?',
+    text: 'This will deactivate the intern account. This action cannot be undone.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#f1f5f9',
+    confirmButtonText: 'Yes, request termination',
+    cancelButtonText: '<span style="color:#475569">Cancel</span>',
+    customClass: { popup: 'swal-custom-popup', confirmButton: 'btn', cancelButton: 'btn' },
+    buttonsStyling: false
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const formData = new FormData();
+      formData.append('csrf_token', '{{ csrf_token() }}');
+      formData.append('reason', 'Termination requested');
+
+      fetch('/manager/student/' + id + '/terminate', {
+        method: 'POST',
+        body: formData
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          Swal.fire('Requested!', 'Termination request sent to admin.', 'success').then(() => {
+            window.location.reload();
+          });
+        } else {
+          Swal.fire('Error', data.error || 'Failed to terminate intern.', 'error');
+        }
+      })
+      .catch(err => {
+        Swal.fire('Error', 'Network or server error occurred.', 'error');
+      });
+    }
+  });
+}
+
+/* ── CSV Export ─────────────────────────────────────────────────────────── */
+function doCSVExport(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  const u = new URL(window.location.origin + "{{ url_for('manager.export_csv') }}");
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('start_date')) u.searchParams.set('start_date', params.get('start_date'));
+  if (params.get('end_date')) u.searchParams.set('end_date', params.get('end_date'));
+  window.location.href = u.toString();
+}
+</script>
+{% endblock %}

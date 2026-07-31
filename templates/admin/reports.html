@@ -1,0 +1,85 @@
+{% extends "base_dashboard.html" %}
+
+{% block page_title %}Reports{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+  <div>
+    <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 0.5rem;">Intern Reports</h1>
+    <p class="text-muted" style="margin: 0;">Review daily and periodic reports submitted by interns across all departments.</p>
+  </div>
+</div>
+
+<div class="card mt-4">
+  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <h3 class="card-title">All Submissions</h3>
+    <form method="GET" action="{{ url_for('admin.reports') }}" style="display: flex; gap: 0.5rem; align-items: center;">
+      <input type="text" name="search" class="form-control" placeholder="Search interns or types..." value="{{ search }}" style="width: 250px;" onblur="this.form.submit()">
+      <noscript><button type="submit" class="btn btn-secondary btn-sm">Search</button></noscript>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Intern</th>
+          <th style="text-align: center;">Type</th>
+          <th>Period / Date</th>
+          <th>Submitted At</th>
+          <th style="text-align: center;">Reviewer</th>
+          <th style="text-align: center;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for report in reports %}
+        <tr>
+          <td>
+            <div style="font-weight: 500;">{{ report.student_name }}</div>
+            <div class="text-muted" style="font-size: 0.75rem;">
+              {{ report.department }}
+              {% if report.rgt_id and report.rgt_id != 'Not Set' %} | {{ report.rgt_id }}{% endif %}
+            </div>
+          </td>
+          <td style="text-align: center;"><span class="badge badge-neutral" style="border: 1px solid var(--color-border); background-color: var(--color-surface-alt);">{{ report.report_type | title }}</span></td>
+          <td>{{ report.period_start }} {% if report.period_end %}to {{ report.period_end }}{% endif %}</td>
+          <td class="text-muted" style="font-size: 0.875rem;">{{ report.submitted_at[:10] }}</td>
+          <td style="text-align: center;">
+            {% if report.reviewed_by %}
+              <span class="badge badge-success">Reviewed by {{ report.reviewed_by }}</span>
+            {% else %}
+              <span class="badge badge-warning">Pending</span>
+            {% endif %}
+          </td>
+          <td style="text-align: center;">
+            <a href="{{ url_for('admin.report_detail', report_id=report.report_id) }}" class="btn btn-sm btn-secondary">View</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="text-center text-muted" style="padding: 3rem 0;">No reports found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  
+  {% if total_pages > 1 %}
+  <div style="padding: 1rem 1.5rem; border-top: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+    <span class="text-muted" style="font-size: 0.875rem;">Page {{ page }} of {{ total_pages }}</span>
+    <div style="display: flex; gap: 0.5rem;">
+      {% if page > 1 %}
+      <a href="{{ url_for('admin.reports', page=page-1, search=search) }}" class="btn btn-secondary btn-sm">Previous</a>
+      {% else %}
+      <button class="btn btn-secondary btn-sm" disabled>Previous</button>
+      {% endif %}
+      
+      {% if page < total_pages %}
+      <a href="{{ url_for('admin.reports', page=page+1, search=search) }}" class="btn btn-secondary btn-sm">Next</a>
+      {% else %}
+      <button class="btn btn-secondary btn-sm" disabled>Next</button>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

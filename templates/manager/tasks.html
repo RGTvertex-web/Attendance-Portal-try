@@ -1,0 +1,276 @@
+{% extends "base_manager.html" %}
+
+{% block page_title %}Team Task Completion & Review{% endblock %}
+
+{% block content %}
+<style>
+/* ── Page Shell ── */
+.hrm-page { padding: 2rem 2.5rem 3.5rem; background: #f8fafc; min-height: 100%; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+/* ── Page Header ── */
+.page-top-bar { 
+  display: flex; align-items: center; justify-content: space-between; 
+  margin-bottom: 2rem; padding-bottom: 1.25rem; border-bottom: 1px solid #e2e8f0; 
+  flex-wrap: wrap; gap: 1rem; 
+}
+.page-top-bar h2 { font-size: 1.6rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em; }
+.page-top-bar p  { font-size: 0.92rem; color: #64748b; margin: 0.25rem 0 0; }
+
+.header-stats { display: flex; gap: 1rem; }
+.stat-pill { 
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 99px; 
+  padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 600; color: #475569; 
+  display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+.stat-pill i { color: #7c3aed; }
+.stat-pill strong { color: #0f172a; }
+
+/* ── Task Cards ── */
+.tasks-list { display: flex; flex-direction: column; gap: 1.75rem; max-width: 1200px; margin: 0 auto; }
+.task-review-card {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 1.25rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03); overflow: hidden; transition: all 0.2s;
+}
+.task-review-card:hover { box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06); border-color: #cbd5e1; }
+
+.task-header-banner {
+  padding: 1.5rem 1.75rem; background: linear-gradient(135deg, #faf5ff, #fff);
+  border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: flex-start; gap: 1.5rem; flex-wrap: wrap;
+}
+.task-title-area h3 { font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0 0 0.5rem; }
+.task-title-area p { font-size: 0.9rem; color: #475569; margin: 0; line-height: 1.5; max-width: 750px; }
+
+.task-badges { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+.badge-cat { background: #f3e8ff; color: #6b21a8; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.7rem; border-radius: 99px; text-transform: uppercase; }
+.badge-dept { background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.7rem; border-radius: 99px; }
+.badge-due { background: #fee2e2; color: #991b1b; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.7rem; border-radius: 99px; display: flex; align-items: center; gap: 0.35rem; }
+
+/* ── Intern Submissions Table ── */
+.review-section { padding: 1.5rem 1.75rem; }
+.review-section-title {
+  font-size: 0.85rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.review-table { width: 100%; border-collapse: collapse; }
+.review-table th { font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; padding: 0.75rem 1rem; border-bottom: 2px solid #f1f5f9; text-align: left; }
+.review-table td { padding: 1rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-size: 0.9rem; }
+.review-table tr:last-child td { border-bottom: none; }
+.review-table tr:hover td { background: #f8fafc; }
+
+.intern-user-cell { display: flex; align-items: center; gap: 0.75rem; }
+.intern-avatar-mini {
+  width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  color: #fff; font-weight: 700; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.intern-name-sub { font-weight: 700; color: #0f172a; margin: 0; }
+.intern-id-sub { font-size: 0.75rem; color: #64748b; margin: 0; }
+
+.status-badge { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.78rem; font-weight: 700; }
+.status-completed { background: #dcfce7; color: #15803d; }
+.status-reviewed { background: #e0f2fe; color: #0369a1; }
+.status-submitted { background: #fef9c3; color: #a16207; }
+.status-revision { background: #fee2e2; color: #b91c1c; }
+.status-pending { background: #f1f5f9; color: #64748b; }
+
+.action-btn-group { display: flex; gap: 0.4rem; align-items: center; }
+.btn-action-mark {
+  border: none; border-radius: 0.5rem; padding: 0.35rem 0.7rem; font-size: 0.75rem; font-weight: 700; cursor: pointer;
+  transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.3rem;
+}
+.btn-mark-completed { background: #dcfce7; color: #15803d; }
+.btn-mark-completed:hover { background: #bbf7d0; transform: scale(1.03); }
+.btn-mark-reviewed { background: #e0f2fe; color: #0369a1; }
+.btn-mark-reviewed:hover { background: #bae6fd; transform: scale(1.03); }
+.btn-mark-revision { background: #fee2e2; color: #b91c1c; }
+.btn-mark-revision:hover { background: #fecaca; transform: scale(1.03); }
+
+.deliverable-box { font-size: 0.82rem; color: #475569; max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.empty-state-box { padding: 4rem 2rem; text-align: center; color: #94a3b8; font-size: 1rem; font-weight: 500; background: #fff; border-radius: 1.25rem; border: 1px solid #e2e8f0; }
+.empty-state-box i { font-size: 2.75rem; color: #cbd5e1; margin-bottom: 1rem; display: block; }
+</style>
+
+<div class="hrm-page">
+
+  <!-- ── Page Header ── -->
+  <div class="page-top-bar">
+    <div>
+      <h2>Team Task Completion & Review Hub</h2>
+      <p>Review intern deliverables, check submitted reports, and mark tasks as Completed or Reviewed.</p>
+    </div>
+    <div class="header-stats">
+      <div class="stat-pill">
+        <i class="fa-solid fa-list-check"></i>
+        <span>Active Tasks: <strong>{{ tasks|length }}</strong></span>
+      </div>
+      <div class="stat-pill">
+        <i class="fa-solid fa-users"></i>
+        <span>My Team Interns: <strong>{{ students|length }}</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Task List & Submissions Review ── -->
+  <div class="tasks-list">
+    {% if not tasks %}
+      <div class="empty-state-box">
+        <i class="fa-solid fa-clipboard-check"></i>
+        No active tasks assigned to your department right now.<br>
+        <span style="font-size: 0.85rem; color: #64748b;">When Admins issue assignments for your team, they will appear here for review and completion marking.</span>
+      </div>
+    {% else %}
+      {% for task in tasks | sort(attribute='due_date', reverse=True) %}
+        <div class="task-review-card">
+          
+          <div class="task-header-banner">
+            <div class="task-title-area">
+              <div class="task-badges">
+                <span class="badge-cat"><i class="fa-solid fa-tag"></i> {{ task.category or 'Project Task' }}</span>
+                <span class="badge-dept"><i class="fa-solid fa-building"></i> {{ task.department or 'All Departments' }}</span>
+                <span class="badge-due"><i class="fa-regular fa-clock"></i> Due: {{ task.due_date[:16] if task.due_date else 'No Deadline' }}</span>
+              </div>
+              <h3>{{ task.title }}</h3>
+              {% if task.description %}
+                <p>{{ task.description }}</p>
+              {% endif %}
+            </div>
+            
+            <div style="text-align: right; background: #f8fafc; padding: 0.75rem 1rem; border-radius: 0.85rem; border: 1px solid #e2e8f0;">
+              <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Team Completion</div>
+              <div style="font-size: 1.25rem; font-weight: 800; color: #7c3aed; margin-top: 0.15rem;">
+                {{ task.submission_count }} / {{ students|length }}
+              </div>
+            </div>
+          </div>
+
+          <div class="review-section">
+            <div class="review-section-title">
+              <span><i class="fa-solid fa-user-check" style="color: #7c3aed; margin-right: 0.4rem;"></i> Team Interns & Submissions</span>
+            </div>
+            
+            <div style="overflow-x: auto;">
+              <table class="review-table">
+                <thead>
+                  <tr>
+                    <th>Intern Name</th>
+                    <th>Submission Status</th>
+                    <th>Submitted Time</th>
+                    <th>Deliverable / Notes</th>
+                    <th style="text-align: right;">Manager Review Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% if not task.intern_statuses %}
+                    <tr>
+                      <td colspan="5" style="text-align: center; color: #94a3b8; padding: 2rem;">No interns assigned or found in your department.</td>
+                    </tr>
+                  {% else %}
+                    {% for item in task.intern_statuses %}
+                      <tr>
+                        <!-- Intern Info -->
+                        <td>
+                          <div class="intern-user-cell">
+                            <div class="intern-avatar-mini">{{ item.student.avatar or item.student.name[:2].upper() }}</div>
+                            <div>
+                              <div class="intern-name-sub">{{ item.student.name }}</div>
+                              <div class="intern-id-sub">{{ item.student.get('intern_id') or item.student.email or ('ID: ' ~ item.student.id[:6]) }}</div>
+                            </div>
+                          </div>
+                        </td>
+                        
+                        <!-- Status Badge -->
+                        <td>
+                          {% if item.status == 'completed' %}
+                            <span class="status-badge status-completed"><i class="fa-solid fa-check-circle"></i> Approved / Completed</span>
+                          {% elif item.status == 'reviewed' %}
+                            <span class="status-badge status-reviewed"><i class="fa-solid fa-eye"></i> Reviewed</span>
+                          {% elif item.status == 'submitted' %}
+                            <span class="status-badge status-submitted"><i class="fa-solid fa-file-arrow-up"></i> Submitted</span>
+                          {% elif item.status == 'revision' %}
+                            <span class="status-badge status-revision"><i class="fa-solid fa-rotate-left"></i> Needs Revision</span>
+                          {% else %}
+                            <span class="status-badge status-pending"><i class="fa-regular fa-clock"></i> Not Submitted Yet</span>
+                          {% endif %}
+                        </td>
+                        
+                        <!-- Submitted Time -->
+                        <td style="color: #64748b; font-weight: 500;">
+                          {{ item.submitted_at[:16] if item.submitted_at != '-' else '—' }}
+                        </td>
+                        
+                        <!-- Deliverable / Notes -->
+                        <td>
+                          {% if item.content_link or item.notes %}
+                            <div class="deliverable-box" title="{{ item.notes }}">
+                              {% if item.content_link and item.content_link != 'Marked directly by Manager' and item.content_link != 'Marked by Manager' %}
+                                <a href="{{ item.content_link }}" target="_blank" style="color: #7c3aed; font-weight: 700; text-decoration: none; margin-right: 0.4rem;">
+                                  <i class="fa-solid fa-external-link-alt"></i> Link
+                                </a>
+                              {% endif %}
+                              {{ item.notes or item.content_link }}
+                            </div>
+                          {% else %}
+                            <span style="color: #cbd5e1; font-style: italic;">No notes</span>
+                          {% endif %}
+                        </td>
+                        
+                        <!-- Manager Actions -->
+                        <td style="text-align: right;">
+                          <div class="action-btn-group" style="justify-content: flex-end;">
+                            <form method="POST" action="{{ url_for('manager.mark_task_status', task_id=task.task_id) }}" style="margin: 0;">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                              <input type="hidden" name="intern_id" value="{{ item.student.id }}">
+                              <input type="hidden" name="status" value="completed">
+                              <button type="submit" class="btn-action-mark btn-mark-completed" title="Mark as Completed & Approved">
+                                <i class="fa-solid fa-check"></i> Complete
+                              </button>
+                            </form>
+                            
+                            <form method="POST" action="{{ url_for('manager.mark_task_status', task_id=task.task_id) }}" style="margin: 0;">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                              <input type="hidden" name="intern_id" value="{{ item.student.id }}">
+                              <input type="hidden" name="status" value="reviewed">
+                              <button type="submit" class="btn-action-mark btn-mark-reviewed" title="Mark as Reviewed">
+                                <i class="fa-solid fa-eye"></i> Review
+                              </button>
+                            </form>
+                            
+                            <form method="POST" action="{{ url_for('manager.mark_task_status', task_id=task.task_id) }}" style="margin: 0;">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                              <input type="hidden" name="intern_id" value="{{ item.student.id }}">
+                              <input type="hidden" name="status" value="revision">
+                              <button type="submit" class="btn-action-mark btn-mark-revision" title="Request Revision / Incomplete">
+                                <i class="fa-solid fa-rotate-left"></i> Revision
+                              </button>
+                            </form>
+                          </div>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+            
+          </div>
+          
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+  {% if total_pages > 1 %}
+  <div style="padding: 1rem 1.5rem; display: flex; justify-content: center; gap: 0.5rem; margin-top: 2rem;">
+    {% if page > 1 %}
+    <a href="{{ url_for('manager.tasks', page=page-1) }}" class="btn btn-outline btn-sm">Previous</a>
+    {% endif %}
+    
+    <span class="text-muted" style="padding: 0.25rem 0.5rem; background: #f8fafc; border-radius: 0.25rem;">Page {{ page }} of {{ total_pages }}</span>
+    
+    {% if page < total_pages %}
+    <a href="{{ url_for('manager.tasks', page=page+1) }}" class="btn btn-outline btn-sm">Next</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div><!-- /hrm-page -->
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends "base_auth.html" %}
+
+{% block page_title %}{% endblock %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 4rem auto;">
+  <div class="auth-card text-left">
+    <div class="auth-card-body">
+      <div class="auth-logo" style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem;">
+        <div style="width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+          <img src="{{ url_for('static', filename='img/brand/favicon.svg') }}" alt="RGTvertex Icon" style="height: 24px;">
+        </div>
+        <span style="font-family: 'Playfair Display', serif; font-weight: 800; font-size: 1.5rem; color: #111827; margin: 0; line-height: 1;">RGTvertex</span>
+      </div>
+      <h1 class="auth-title">Join Intern Portal.</h1>
+      <p class="auth-subtitle">Create your account to get started.</p>
+
+      {% if error %}
+      <div class="alert alert-danger" style="padding: 0.75rem 1rem;">
+        <i class="fa-solid fa-triangle-exclamation"></i> {{ error }}
+      </div>
+      {% endif %}
+
+      <form method="POST" action="{{ url_for('auth.signup') }}" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-group">
+          <label class="form-label" for="name">Full Name</label>
+          <div class="input-icon-wrapper">
+            <i class="fa-regular fa-user input-icon"></i>
+            <input
+              id="name"
+              type="text"
+              name="name"
+              class="form-control with-icon"
+              placeholder="Jane Doe"
+              value="{{ request.form.get('name', '') }}"
+              required
+              autocomplete="name"
+              autofocus>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <div class="input-icon-wrapper">
+            <i class="fa-regular fa-envelope input-icon"></i>
+            <input
+              id="email"
+              type="email"
+              name="email"
+              class="form-control with-icon"
+              placeholder="you@company.com"
+              value="{{ request.form.get('email', '') }}"
+              required
+              autocomplete="email">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="phone">Phone Number</label>
+          <div class="input-icon-wrapper">
+            <i class="fa-solid fa-phone input-icon"></i>
+            <input
+              id="phone"
+              type="tel"
+              name="phone"
+              class="form-control with-icon"
+              placeholder="+1 (555) 000-0000"
+              value="{{ request.form.get('phone', '') }}"
+              required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div class="input-icon-wrapper">
+            <i class="fa-solid fa-lock input-icon"></i>
+            <input
+              id="password"
+              type="password"
+              name="password"
+              class="form-control with-icon"
+              placeholder="••••••••"
+              required
+              autocomplete="new-password">
+          </div>
+          <div class="text-muted mt-1" style="font-size: 0.75rem;">Must be at least 6 characters.</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="department">Department</label>
+          <div class="input-icon-wrapper">
+            <i class="fa-regular fa-building input-icon"></i>
+            <select id="department" name="department" class="form-select with-icon" required>
+              <option value="">Select Department...</option>
+              {% for d in departments %}
+              <option value="{{ d }}" {% if request.form.get('department') == d %}selected{% endif %}>{{ d }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div id="internFields" class="form-group">
+          <label class="form-label" for="internship_duration_months">Internship Duration</label>
+          <div class="input-icon-wrapper">
+            <i class="fa-solid fa-hourglass-half input-icon"></i>
+            <select id="internship_duration_months" name="internship_duration_months" class="form-select with-icon" required>
+              <option value="" disabled selected>Select duration</option>
+              <option value="3" {% if request.form.get('internship_duration_months') == '3' %}selected{% endif %}>3 Months</option>
+              <option value="6" {% if request.form.get('internship_duration_months') == '6' %}selected{% endif %}>6 Months</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group mb-4" id="joiningDateGroup">
+          <label class="form-label" for="joining_date">Joining Date</label>
+          <div class="input-icon-wrapper">
+            <i class="fa-solid fa-calendar-day input-icon"></i>
+            <input type="date" id="joining_date" name="joining_date" class="form-control with-icon" value="{{ request.form.get('joining_date', '') }}" required autocomplete="off">
+          </div>
+          <small class="text-muted d-block mt-1">Use the calendar icon to select your joining date.</small>
+          <small id="joining_date_feedback" class="text-success d-block mt-1" style="display: none; font-weight: 600;"></small>
+        </div>
+
+        <div class="form-group mb-4" id="collegeNameGroup">
+          <label class="form-label" for="college_name">University / College (Optional)</label>
+          <div class="input-icon-wrapper">
+            <i class="fa-solid fa-graduation-cap input-icon"></i>
+            <input type="text" id="college_name" name="college_name" class="form-control with-icon" placeholder="e.g. Stanford University" value="{{ request.form.get('college_name', '') }}">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-3" style="width: 100%;">
+          Create Account <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="text-center mt-4">
+    <p class="text-muted" style="font-size: 0.875rem;">
+      Already have an account? <a href="{{ url_for('auth.login') }}" style="color: var(--color-brand-black); font-weight: 600; text-decoration: underline;">Log in</a>
+    </p>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const joiningDateInput = document.getElementById('joining_date');
+    const feedback = document.getElementById('joining_date_feedback');
+
+    function updateFeedback() {
+      if (joiningDateInput && joiningDateInput.value) {
+        const parts = joiningDateInput.value.split('-');
+        if (parts.length === 3) {
+          const d = new Date(parts[0], parts[1] - 1, parts[2]);
+          const options = { year: 'numeric', month: 'long', day: 'numeric' };
+          feedback.textContent = 'You selected: ' + d.toLocaleDateString(undefined, options);
+          feedback.style.display = 'block';
+          return;
+        }
+      }
+      if (feedback) feedback.style.display = 'none';
+    }
+
+    if (joiningDateInput) {
+      joiningDateInput.addEventListener('change', updateFeedback);
+      joiningDateInput.addEventListener('input', updateFeedback);
+      updateFeedback();
+    }
+  });
+</script>
+{% endblock %}

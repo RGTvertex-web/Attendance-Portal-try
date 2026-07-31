@@ -1,0 +1,190 @@
+{% extends "base_manager.html" %}
+
+{% block page_title %}Review Leave Request{% endblock %}
+
+{% block content %}
+<style>
+/* ── Page Shell ── */
+.hrm-page { padding: 2rem 2.5rem 3.5rem; background: #f8fafc; min-height: 100%; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+/* ── Page Header ── */
+.page-top-bar { 
+  display: flex; align-items: center; justify-content: space-between; 
+  margin-bottom: 2rem; padding-bottom: 1.25rem; border-bottom: 1px solid #e2e8f0; 
+  flex-wrap: wrap; gap: 1rem; 
+}
+.page-top-bar h2 { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em; }
+.page-top-bar p  { font-size: 0.9rem; color: #64748b; margin: 0.25rem 0 0; }
+
+.header-actions { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+.btn-action-outline {
+  background: #fff; border: 1px solid #cbd5e1; border-radius: 0.75rem;
+  padding: 0.5rem 0.9rem; font-size: 0.82rem; font-weight: 600; color: #334155;
+  text-decoration: none !important; display: inline-flex; align-items: center; gap: 0.4rem;
+  transition: all 0.2s;
+}
+.btn-action-outline:hover { border-color: #7c3aed; color: #7c3aed; background: #faf5ff; }
+
+/* ── Card ── */
+.hrm-card {
+  background: #fff; border-radius: 1.25rem; border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 25px -5px rgba(0, 0, 0, 0.05); overflow: hidden;
+  max-width: 680px; margin: 0 auto;
+}
+.hrm-card-header { 
+  padding: 1.25rem 1.75rem; border-bottom: 1px solid #f1f5f9; 
+  background: linear-gradient(to right, #faf5ff, #fff);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hrm-card-title { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 0.6rem; }
+.hrm-card-title i { color: #7c3aed; font-size: 1.15rem; }
+.hrm-card-body { padding: 2rem; }
+
+/* ── Details Grid ── */
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.75rem; }
+@media (max-width: 600px) { .detail-grid { grid-template-columns: 1fr; } }
+.detail-box {
+  background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 0.85rem; padding: 0.85rem 1.1rem;
+}
+.detail-label { font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.3rem; }
+.detail-value { font-size: 0.95rem; font-weight: 700; color: #0f172a; }
+
+.reason-box {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 1.1rem 1.25rem;
+  font-size: 0.9rem; color: #334155; line-height: 1.6; margin-bottom: 2rem;
+}
+.reason-title { font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+
+/* ── Form Controls ── */
+.form-label-hrm { display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.45rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.form-control-hrm {
+  width: 100%; border: 1px solid #cbd5e1; border-radius: 0.75rem;
+  padding: 0.75rem 1rem; font-size: 0.9rem; font-family: inherit; color: #0f172a;
+  background: #fff; outline: none; transition: all 0.2s; box-sizing: border-box; resize: vertical;
+}
+.form-control-hrm:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12); }
+
+/* ── Decision Buttons ── */
+.btn-approve {
+  background: linear-gradient(135deg, #16a34a, #15803d); color: #fff; border: none; border-radius: 0.75rem;
+  padding: 0.85rem 1.25rem; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; flex: 1;
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25); font-family: inherit;
+}
+.btn-approve:hover { background: linear-gradient(135deg, #15803d, #166534); transform: translateY(-1px); }
+.btn-reject {
+  background: #fff; border: 1px solid #fca5a5; color: #dc2626; border-radius: 0.75rem;
+  padding: 0.85rem 1.25rem; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; flex: 1;
+  font-family: inherit;
+}
+.btn-reject:hover { background: #fee2e2; border-color: #dc2626; }
+
+/* ── Status Pills ── */
+.status-pill { display: inline-block; border-radius: 99px; padding: 0.3rem 0.85rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+.pill-approved { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.pill-pending  { background: #fef9c3; color: #a16207; border: 1px solid #fde047; }
+.pill-rejected { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+</style>
+
+<div class="hrm-page">
+
+  <div class="page-top-bar">
+    <div>
+      <h2>Review Leave Application</h2>
+      <p>Evaluate intern absence requests and provide official manager decision.</p>
+    </div>
+    <div class="header-actions">
+      {% if prev_leave_id %}
+      <a href="{{ url_for('manager.leave_detail', leave_id=prev_leave_id) }}" class="btn-action-outline">
+        <i class="fa-solid fa-chevron-left"></i> Previous
+      </a>
+      {% endif %}
+      {% if next_leave_id %}
+      <a href="{{ url_for('manager.leave_detail', leave_id=next_leave_id) }}" class="btn-action-outline">
+        Next <i class="fa-solid fa-chevron-right"></i>
+      </a>
+      {% endif %}
+      <a href="{{ url_for('manager.leaves') }}" class="btn-action-outline" style="background:#f1f5f9;">
+        <i class="fa-solid fa-list"></i> All Applications
+      </a>
+    </div>
+  </div>
+
+  <div class="hrm-card">
+    <div class="hrm-card-header">
+      <h3 class="hrm-card-title"><i class="fa-solid fa-user-clock"></i> Leave Application from <strong>{{ leave.student_name }}</strong></h3>
+      <div>
+        {% if leave.status == 'approved' %}
+          <span class="status-pill pill-approved"><i class="fa-solid fa-check"></i> Approved</span>
+        {% elif leave.status == 'rejected' %}
+          <span class="status-pill pill-rejected"><i class="fa-solid fa-xmark"></i> Rejected</span>
+        {% else %}
+          <span class="status-pill pill-pending"><i class="fa-solid fa-clock"></i> Pending Review</span>
+        {% endif %}
+      </div>
+    </div>
+    
+    <div class="hrm-card-body">
+      <div class="detail-grid">
+        <div class="detail-box">
+          <div class="detail-label">Start Date</div>
+          <div class="detail-value"><i class="fa-regular fa-calendar-check" style="color:#7c3aed;"></i> {{ leave.start_date }}</div>
+        </div>
+        <div class="detail-box">
+          <div class="detail-label">End Date</div>
+          <div class="detail-value"><i class="fa-regular fa-calendar-xmark" style="color:#ef4444;"></i> {{ leave.end_date }}</div>
+        </div>
+        <div class="detail-box">
+          <div class="detail-label">Leave Category</div>
+          <div class="detail-value">{{ leave.leave_category if leave.leave_category else 'General Leave' }}</div>
+        </div>
+        <div class="detail-box">
+          <div class="detail-label">Total Duration</div>
+          <div class="detail-value" style="color:#7c3aed;">{{ leave.days_requested }} Day(s)</div>
+        </div>
+      </div>
+
+      <div class="reason-box">
+        <div class="reason-title"><i class="fa-solid fa-quote-left"></i> Stated Reason for Leave</div>
+        {{ leave.reason }}
+      </div>
+
+      {% if leave.status == 'pending' %}
+      <form method="POST" action="{{ url_for('manager.decide_leave', leave_id=leave.leave_id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div style="margin-bottom: 1.5rem;">
+          <label class="form-label-hrm" for="remarks">Manager Remarks & Feedback (Optional)</label>
+          <textarea id="remarks" name="remarks" class="form-control-hrm" rows="3" placeholder="Provide any comments or instructions for the intern regarding this leave..."></textarea>
+        </div>
+        
+        <div style="display: flex; gap: 1rem;">
+          <button type="submit" name="status" value="approved" class="btn-approve" data-confirm="Approve this leave request?">
+            <i class="fa-solid fa-check"></i> Approve Application
+          </button>
+          <button type="submit" name="status" value="rejected" class="btn-reject" data-confirm="Reject this leave request?">
+            <i class="fa-solid fa-xmark"></i> Reject Request
+          </button>
+        </div>
+      </form>
+      {% else %}
+      <div class="detail-box" style="margin-bottom: 1rem; background: #f1f5f9;">
+        <div class="detail-label">Decision Record</div>
+        <div style="font-size: 0.88rem; color: #334155;">
+          Decided by <strong>{{ leave.decided_by }}</strong> on {{ leave.decided_at[:10] }}
+        </div>
+      </div>
+      {% if leave.remarks %}
+      <div class="reason-box" style="background: #fff; border-color: #cbd5e1; margin-bottom: 0;">
+        <div class="reason-title"><i class="fa-solid fa-comment-dots"></i> Manager Remarks</div>
+        {{ leave.remarks }}
+      </div>
+      {% endif %}
+      {% endif %}
+
+    </div>
+  </div>
+
+</div><!-- /hrm-page -->
+{% endblock %}

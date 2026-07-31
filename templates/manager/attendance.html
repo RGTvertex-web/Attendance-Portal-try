@@ -1,0 +1,385 @@
+{% extends "base_manager.html" %}
+
+{% block page_title %}Intern Attendance Dashboard{% endblock %}
+
+{% block content %}
+<style>
+/* ── Page Shell ── */
+.hrm-page { padding: 2rem 2.5rem 3.5rem; background: #f8fafc; min-height: 100%; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+/* ── Top Header Bar ── */
+.page-top-bar { 
+  display: flex; align-items: center; justify-content: space-between; 
+  margin-bottom: 2rem; padding-bottom: 1.25rem; border-bottom: 1px solid #e2e8f0; 
+  flex-wrap: wrap; gap: 1.25rem; 
+}
+.page-top-bar h2 { font-size: 1.6rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em; }
+.page-top-bar p  { font-size: 0.9rem; color: #64748b; margin: 0.25rem 0 0; }
+
+.weekend-banner {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  background: linear-gradient(135deg, #fff7ed, #ffedd5); border: 1px solid #fed7aa; 
+  border-radius: 99px; padding: 0.5rem 1.1rem; font-size: 0.85rem; color: #ea580c; font-weight: 700;
+  box-shadow: 0 2px 6px rgba(234, 88, 12, 0.08);
+}
+.weekend-banner i { font-size: 1rem; color: #f97316; }
+
+/* ── Filter Toolbar Card ── */
+.filter-toolbar {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 1.25rem;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
+  padding: 1.25rem 1.75rem; margin-bottom: 2rem;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+}
+.toolbar-left { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; flex: 1; }
+.att-search-wrap {
+  display: flex; align-items: center; gap: 0.6rem;
+  background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 0.75rem;
+  padding: 0.6rem 1.1rem; transition: all 0.2s; min-width: 280px; flex: 1; max-width: 400px;
+}
+.att-search-wrap:focus-within { border-color: #7c3aed; background: #fff; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1); }
+.att-search-wrap i { color: #94a3b8; font-size: 0.9rem; }
+.att-search-wrap input { border: none; background: transparent; outline: none; font-size: 0.9rem; color: #0f172a; width: 100%; font-family: inherit; }
+
+.att-date-wrap { display: flex; align-items: center; gap: 0.5rem; }
+.att-date-input {
+  background: #fff; border: 1px solid #cbd5e1; border-radius: 0.75rem;
+  padding: 0.6rem 1.1rem; font-size: 0.9rem; font-weight: 600; color: #1e293b; font-family: inherit;
+  cursor: pointer; transition: all 0.2s; outline: none;
+}
+.att-date-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1); }
+
+/* ── Summary Stats Grid ── */
+.att-stats-grid { 
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 2.25rem; 
+}
+@media (max-width: 1024px) { .att-stats-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 640px)  { .att-stats-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.stat-metric-card {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 1.1rem; padding: 1.1rem 1.25rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.02); transition: all 0.2s;
+}
+.stat-metric-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.05); border-color: #cbd5e1; }
+.stat-info { display: flex; flex-direction: column; }
+.stat-label { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.25rem; }
+.stat-number { font-size: 1.6rem; font-weight: 900; color: #0f172a; line-height: 1; }
+.stat-icon-wrap {
+  width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; flex-shrink: 0;
+}
+.wrap-total   { background: #f3e8ff; color: #7c3aed; }
+.wrap-present { background: #dcfce7; color: #16a34a; }
+.wrap-absent  { background: #fee2e2; color: #dc2626; }
+.wrap-leave   { background: #fef3c7; color: #d97706; }
+.wrap-pending { background: #f1f5f9; color: #64748b; }
+
+/* ── Intern Cards Grid ── */
+.att-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+  gap: 1.75rem;
+}
+@media (max-width: 640px) { .att-cards-grid { grid-template-columns: 1fr; } }
+
+/* ── Individual Intern Card ── */
+.intern-att-card {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 1.35rem;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
+  padding: 1.5rem 1.75rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1.25rem;
+  transition: all 0.2s;
+}
+.intern-att-card:hover { border-color: #cbd5e1; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08); transform: translateY(-2px); }
+
+/* Card Header */
+.icard-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.icard-user { display: flex; align-items: center; gap: 1rem; }
+.icard-avatar {
+  width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+  background: linear-gradient(135deg, #7c3aed, #4c1d95); color: #fff;
+  font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 10px rgba(124, 58, 237, 0.25);
+}
+.icard-name { font-size: 1.1rem; font-weight: 800; color: #0f172a; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.icard-email { font-size: 0.8rem; color: #64748b; font-weight: 500; }
+
+.status-badge-large {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  border-radius: 99px; padding: 0.35rem 0.9rem; font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.badge-present { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.badge-absent  { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.badge-leave   { background: #fef9c3; color: #a16207; border: 1px solid #fde047; }
+.badge-pending { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+
+.missing-alert-pill {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  background: #fffbeb; color: #b45309; border: 1px solid #fcd34d;
+  border-radius: 99px; padding: 0.18rem 0.6rem; font-size: 0.7rem; font-weight: 700;
+}
+
+/* Report Section */
+.icard-report-area {
+  background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 1rem; padding: 1.1rem 1.25rem;
+  font-size: 0.88rem; color: #334155; line-height: 1.6;
+}
+.report-row { margin-bottom: 0.45rem; }
+.report-row:last-child { margin-bottom: 0; }
+.report-row strong { color: #0f172a; font-weight: 700; margin-right: 0.25rem; }
+.report-timestamp { font-size: 0.75rem; color: #94a3b8; font-weight: 600; margin-top: 0.65rem; display: flex; align-items: center; gap: 0.4rem; }
+
+.no-report-alert {
+  background: #fffbeb; border: 1px dashed #fcd34d; border-radius: 1rem; padding: 1.1rem 1.25rem;
+  font-size: 0.88rem; color: #b45309; font-weight: 600; display: flex; align-items: center; gap: 0.75rem;
+}
+.no-report-alert i { font-size: 1.25rem; color: #f59e0b; }
+
+/* Action Footer */
+.icard-actions {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
+  padding-top: 0.75rem; border-top: 1px solid #f1f5f9; flex-wrap: wrap;
+}
+.action-btn-group { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.btn-att-action {
+  border: none; border-radius: 0.75rem; padding: 0.5rem 0.95rem; font-size: 0.82rem; font-weight: 700;
+  cursor: pointer; transition: all 0.18s; font-family: inherit; display: inline-flex; align-items: center; gap: 0.45rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+.btn-mark-p { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
+.btn-mark-p:hover { background: #22c55e; color: #fff; transform: translateY(-1px); }
+.btn-mark-a { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+.btn-mark-a:hover { background: #ef4444; color: #fff; transform: translateY(-1px); }
+.btn-mark-l { background: #fef9c3; color: #d97706; border: 1px solid #fde047; }
+.btn-mark-l:hover { background: #f59e0b; color: #fff; transform: translateY(-1px); }
+
+.btn-history-link {
+  background: #fff; border: 1px solid #cbd5e1; border-radius: 0.75rem; padding: 0.5rem 0.95rem;
+  font-size: 0.82rem; font-weight: 700; color: #475569; text-decoration: none !important;
+  display: inline-flex; align-items: center; gap: 0.45rem; transition: all 0.18s; margin-left: auto;
+}
+.btn-history-link:hover { border-color: #7c3aed; color: #7c3aed; background: #faf5ff; }
+
+.weekend-notice-card {
+  width: 100%; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 0.75rem; padding: 0.6rem 1rem;
+  color: #ea580c; font-size: 0.82rem; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+}
+
+/* ── Empty State ── */
+.empty-state-box {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 1.5rem; padding: 4rem 2rem;
+  text-align: center; max-width: 500px; margin: 0 auto; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03);
+}
+.empty-state-box i { font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem; display: block; }
+.empty-state-box h4 { font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0 0 0.5rem; }
+.empty-state-box p { font-size: 0.9rem; color: #64748b; margin: 0; line-height: 1.5; }
+</style>
+
+<div class="hrm-page">
+
+  <!-- ── Page Header ── -->
+  <div class="page-top-bar">
+    <div>
+      <h2>Intern Attendance & Daily Monitoring</h2>
+      <p>Review daily progress submissions, verify attendance consistency, and record status.</p>
+    </div>
+    {% if is_weekend %}
+    <div class="weekend-banner">
+      <i class="fa-solid fa-umbrella-beach"></i>
+      <span>Weekend Schedule — Automatic Leave Policy Applies</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ── Filter Toolbar ── -->
+  <form method="GET" action="{{ url_for('manager.attendance') }}">
+    <div class="filter-toolbar">
+      <div class="toolbar-left">
+        <div class="att-search-wrap">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" name="search" placeholder="Search interns by name or email..." value="{{ search }}" onblur="this.form.submit()">
+        </div>
+      </div>
+      <div class="att-date-wrap">
+        <span style="font-size: 0.82rem; font-weight: 700; color: #64748b; text-transform: uppercase;"><i class="fa-regular fa-calendar"></i> Date Filter:</span>
+        <input type="date" name="date" class="att-date-input" value="{{ today }}" max="{{ today }}" required onchange="this.form.submit()">
+        <noscript><button type="submit" class="btn-history-link" style="margin:0;">Filter</button></noscript>
+      </div>
+    </div>
+  </form>
+
+  <!-- ── Summary Stats Grid ── -->
+  {% if students %}
+  {% set cnt_p = students | selectattr('today_status','equalto','present')  | list | length %}
+  {% set cnt_a = students | selectattr('today_status','equalto','absent')   | list | length %}
+  {% set cnt_l = students | selectattr('today_status','equalto','on_leave') | list | length %}
+  {% set cnt_u = students | length - cnt_p - cnt_a - cnt_l %}
+  <div class="att-stats-grid">
+    <div class="stat-metric-card">
+      <div class="stat-info">
+        <span class="stat-label">Total Assigned</span>
+        <span class="stat-number">{{ students|length }}</span>
+      </div>
+      <div class="stat-icon-wrap wrap-total"><i class="fa-solid fa-users"></i></div>
+    </div>
+    <div class="stat-metric-card">
+      <div class="stat-info">
+        <span class="stat-label">Present Today</span>
+        <span class="stat-number" style="color:#16a34a;">{{ cnt_p }}</span>
+      </div>
+      <div class="stat-icon-wrap wrap-present"><i class="fa-solid fa-user-check"></i></div>
+    </div>
+    <div class="stat-metric-card">
+      <div class="stat-info">
+        <span class="stat-label">Absent</span>
+        <span class="stat-number" style="color:#dc2626;">{{ cnt_a }}</span>
+      </div>
+      <div class="stat-icon-wrap wrap-absent"><i class="fa-solid fa-user-xmark"></i></div>
+    </div>
+    <div class="stat-metric-card">
+      <div class="stat-info">
+        <span class="stat-label">On Leave</span>
+        <span class="stat-number" style="color:#d97706;">{{ cnt_l }}</span>
+      </div>
+      <div class="stat-icon-wrap wrap-leave"><i class="fa-solid fa-plane"></i></div>
+    </div>
+    <div class="stat-metric-card">
+      <div class="stat-info">
+        <span class="stat-label">Not Marked</span>
+        <span class="stat-number" style="color:#64748b;">{{ cnt_u }}</span>
+      </div>
+      <div class="stat-icon-wrap wrap-pending"><i class="fa-solid fa-clock-rotate-left"></i></div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Intern Cards Grid ── -->
+  {% if students %}
+  <div class="att-cards-grid" id="internList">
+    {% for student in students %}
+    <div class="intern-att-card" data-name="{{ student.name|lower }}">
+
+      <!-- Card Top: User & Status -->
+      <div class="icard-top">
+        <div class="icard-user">
+          <div class="icard-avatar">{{ student.name[:2]|upper }}</div>
+          <div>
+            <div class="icard-name">
+              {{ student.name }}
+              {% if not student.latest_report or student.latest_report.submitted_at[:10] != today %}
+                <span class="missing-alert-pill"><i class="fa-solid fa-circle-exclamation"></i> Missing Report</span>
+              {% endif %}
+            </div>
+            <div class="icard-email"><i class="fa-regular fa-envelope"></i> {{ student.email }}</div>
+          </div>
+        </div>
+        <div>
+          {% if student.today_status == 'present' %}
+            <span class="status-badge-large badge-present"><i class="fa-solid fa-check"></i> Present</span>
+          {% elif student.today_status == 'absent' %}
+            <span class="status-badge-large badge-absent"><i class="fa-solid fa-xmark"></i> Absent</span>
+          {% elif student.today_status == 'on_leave' %}
+            <span class="status-badge-large badge-leave"><i class="fa-solid fa-plane"></i> On Leave</span>
+          {% else %}
+            <span class="status-badge-large badge-pending"><i class="fa-regular fa-circle"></i> Not Marked</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Card Middle: Daily Report Activity -->
+      {% if student.latest_report and student.latest_report.submitted_at[:10] == today %}
+        <div class="icard-report-area">
+          <div class="report-row"><strong>Given Task:</strong> {{ student.latest_report.report_data.given }}</div>
+          <div class="report-row"><strong>Work Done:</strong> <span style="color:#16a34a; font-weight:600;">{{ student.latest_report.report_data.done }}</span></div>
+          {% if student.latest_report.report_data.remaining %}
+          <div class="report-row"><strong>Remaining:</strong> {{ student.latest_report.report_data.remaining }}</div>
+          {% endif %}
+          <div class="report-timestamp"><i class="fa-regular fa-clock"></i> Submitted today at {{ student.latest_report.submitted_at[11:16] }} UTC</div>
+        </div>
+      {% else %}
+        <div class="no-report-alert">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <div>
+            <div style="font-weight: 800; color: #92400e;">No Daily Report Submitted Today</div>
+            <div style="font-size: 0.8rem; font-weight: 500; opacity: 0.9;">Intern has not submitted their progress summary for this date yet.</div>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Card Footer: Quick Action Toolbar -->
+      <div class="icard-actions">
+        {% if is_weekend %}
+          <div class="weekend-notice-card"><i class="fa-solid fa-umbrella-beach"></i> Weekend Schedule — Automatic Leave Applied</div>
+        {% else %}
+          <div class="action-btn-group">
+            {% if student.today_status != 'present' %}
+            <form method="POST" action="{{ url_for('manager.mark_attendance') }}" style="margin:0;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="student_id" value="{{ student.id }}">
+              <input type="hidden" name="date" value="{{ today }}">
+              <input type="hidden" name="status" value="present">
+              <button type="submit" class="btn-att-action btn-mark-p"><i class="fa-solid fa-check"></i> Present</button>
+            </form>
+            {% endif %}
+
+            {% if student.today_status != 'absent' %}
+            <form method="POST" action="{{ url_for('manager.mark_attendance') }}" style="margin:0;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="student_id" value="{{ student.id }}">
+              <input type="hidden" name="date" value="{{ today }}">
+              <input type="hidden" name="status" value="absent">
+              <button type="submit" class="btn-att-action btn-mark-a"><i class="fa-solid fa-xmark"></i> Absent</button>
+            </form>
+            {% endif %}
+
+            {% if student.today_status != 'on_leave' %}
+            <form method="POST" action="{{ url_for('manager.mark_attendance') }}" style="margin:0;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="student_id" value="{{ student.id }}">
+              <input type="hidden" name="date" value="{{ today }}">
+              <input type="hidden" name="status" value="on_leave">
+              <button type="submit" class="btn-att-action btn-mark-l"><i class="fa-solid fa-plane"></i> Leave</button>
+            </form>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        <a href="{{ url_for('manager.student_detail', intern_id=student.id) }}" class="btn-history-link">
+          Profile & History <i class="fa-solid fa-arrow-right"></i>
+        </a>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty-state-box">
+    <i class="fa-solid fa-user-slash"></i>
+    <h4>No Interns Found</h4>
+    <p>No interns match your current search query or date filter.</p>
+  </div>
+  {% endif %}
+
+  <!-- ── Pagination ── -->
+  {% if total_pages > 1 %}
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; flex-wrap: wrap; gap: 1rem;">
+    <span style="font-size: 0.85rem; color: #64748b; font-weight: 600;">Showing Page <strong>{{ page }}</strong> of {{ total_pages }}</span>
+    <div style="display: flex; gap: 0.5rem;">
+      {% if page > 1 %}
+        <a href="{{ url_for('manager.attendance', page=page-1, search=search, date=today) }}" class="btn-history-link" style="margin:0;">← Previous Page</a>
+      {% else %}
+        <span class="btn-history-link" style="margin:0; opacity:0.5; cursor:not-allowed;">← Previous Page</span>
+      {% endif %}
+      {% if page < total_pages %}
+        <a href="{{ url_for('manager.attendance', page=page+1, search=search, date=today) }}" class="btn-history-link" style="margin:0;">Next Page →</a>
+      {% else %}
+        <span class="btn-history-link" style="margin:0; opacity:0.5; cursor:not-allowed;">Next Page →</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+</div><!-- /hrm-page -->
+{% endblock %}

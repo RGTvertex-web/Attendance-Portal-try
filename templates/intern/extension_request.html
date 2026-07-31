@@ -1,0 +1,70 @@
+{% extends "base_dashboard.html" %}
+
+{% block page_title %}Request Internship Extension{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card shadow-sm border-0 mt-4">
+      <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+        <h3 class="card-title text-primary"><i class="fa-solid fa-calendar-plus me-2"></i> Request Extension</h3>
+        <p class="text-muted">Use this form to request an extension of your internship duration. Note: This request will be sent to your manager for approval.</p>
+      </div>
+      
+      <div class="card-body p-4">
+        <form method="POST" action="{{ url_for('intern.extension_request') }}" novalidate>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label text-muted">Intern Name</label>
+              <input type="text" class="form-control" value="{{ g.user.name }}" readonly style="background-color: #f8f9fa;">
+            </div>
+            
+            <div class="col-md-6 mb-3">
+              <label class="form-label text-muted">Joining Date</label>
+              <input type="text" class="form-control" value="{{ cycle_data.joining_date }}{% if cycle_data.is_estimated_joining_date %} (Estimated){% endif %}" readonly style="background-color: #f8f9fa;">
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label text-muted">Current Duration</label>
+              <input type="text" class="form-control" value="{{ cycle_data.duration_months }} Months" readonly style="background-color: #f8f9fa;">
+            </div>
+            
+            <div class="col-md-6 mb-3">
+              <label class="form-label text-muted">Expected Completion</label>
+              <input type="text" class="form-control" value="{{ cycle_data.expected_completion_date }}" readonly style="background-color: #f8f9fa;">
+            </div>
+          </div>
+          
+          <hr class="my-4">
+          
+          <div class="form-group mb-4">
+            <label class="form-label fw-bold" for="requested_months">Requested Extension (Months) <span class="text-danger">*</span></label>
+            <div class="input-icon-wrapper">
+              <i class="fa-solid fa-hourglass-half input-icon"></i>
+              <input type="number" id="requested_months" name="requested_months" class="form-control with-icon" min="1" max="12" placeholder="e.g. 1, 3, 6" required>
+            </div>
+          </div>
+          
+          <div class="form-group mb-4">
+            <label class="form-label fw-bold" for="reason">Reason for Extension <span class="text-danger">*</span></label>
+            <textarea id="reason" name="reason" class="form-control" rows="4" placeholder="Briefly explain why you would like to extend your internship..." required>I would like to request an extension of my internship duration to continue contributing to the team and further develop my skills.</textarea>
+          </div>
+          
+          <div class="d-flex justify-content-between mt-4">
+            <a href="{{ url_for('intern.dashboard') }}" class="btn btn-outline-secondary">
+              <i class="fa-solid fa-arrow-left me-1"></i> Cancel
+            </a>
+            <button type="submit" class="btn btn-primary px-4">
+              Submit Request <i class="fa-solid fa-paper-plane ms-1"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

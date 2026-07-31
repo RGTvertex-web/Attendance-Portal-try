@@ -1,0 +1,111 @@
+{% extends "base_dashboard.html" %}
+
+{% block page_title %}My Attendance{% endblock %}
+
+{% block content %}
+<style>
+  .calendar-day-box {
+    min-height: 100px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+  }
+  .cal-current-month {
+    background-color: #ffffff;
+  }
+  .cal-other-month {
+    background-color: #f9fafb;
+  }
+  .cal-date-text-current {
+    font-weight: 600;
+    color: var(--color-text);
+  }
+  .cal-date-text-other {
+    font-weight: 400;
+    color: var(--color-text-muted);
+  }
+</style>
+<div class="kpi-row mb-4">
+  <div class="kpi-card">
+    <div class="kpi-icon icon-green"><i class="fa-solid fa-check"></i></div>
+    <div class="kpi-details">
+      <div class="kpi-value">{{ att_summary.present }}</div>
+      <div class="kpi-label">Present</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon icon-red"><i class="fa-solid fa-xmark"></i></div>
+    <div class="kpi-details">
+      <div class="kpi-value">{{ att_summary.absent }}</div>
+      <div class="kpi-label">Absent</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon icon-amber"><i class="fa-solid fa-user-clock"></i></div>
+    <div class="kpi-details">
+      <div class="kpi-value">{{ att_summary.on_leave }}</div>
+      <div class="kpi-label">Leaves</div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">
+    <h3><i class="fa-regular fa-calendar"></i> {{ current_month_name }} {{ current_year }}</h3>
+  </div>
+  <div class="card-body" style="padding: 1rem;">
+    <!-- CSS Grid Calendar with horizontal scroll for mobile -->
+    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 0.5rem;">
+      <div style="display: grid; grid-template-columns: repeat(7, minmax(85px, 1fr)); gap: 1px; background-color: var(--color-border); border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden; min-width: 620px;">
+      
+      <!-- Headers -->
+      {% for day_name in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
+      <div style="background-color: var(--color-bg-alt); padding: 10px; text-align: center; font-weight: 600; font-size: 0.85rem; color: var(--color-text-muted);">
+        {{ day_name }}
+      </div>
+      {% endfor %}
+      
+      <!-- Days -->
+      {% for week in month_days %}
+        {% for date_obj in week %}
+          {% set date_str = date_obj.strftime('%Y-%m-%d') %}
+          {% set is_current_month = (date_obj.month == today.month) %}
+          {% set status = att_map.get(date_str) %}
+          
+          <div class="calendar-day-box {{ 'cal-current-month' if is_current_month else 'cal-other-month' }}">
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+              <span class="{{ 'cal-date-text-current' if is_current_month else 'cal-date-text-other' }}">
+                {{ date_obj.day }}
+              </span>
+              {% if date_str == today.strftime('%Y-%m-%d') %}
+                <span style="font-size: 0.65rem; font-weight: 600; color: var(--color-primary); text-transform: uppercase; letter-spacing: 0.5px;">Today</span>
+              {% endif %}
+            </div>
+            
+            {% set pill_base = "align-self: flex-start; margin-top: auto; font-size: 0.75rem; font-weight: 600; padding: 4px 8px; border-radius: 99px; display: inline-flex; align-items: center; gap: 4px;" %}
+            {% if status and is_current_month %}
+              {% if status.lower().startswith('present') %}
+                <div style="{{ pill_base }} background-color: #dcfce7; color: #15803d;"><i class="fa-solid fa-check"></i> Present</div>
+              {% elif status.lower() == 'absent' %}
+                <div style="{{ pill_base }} background-color: #fee2e2; color: #b91c1c;"><i class="fa-solid fa-xmark"></i> Absent</div>
+              {% elif status.lower() in ('leave', 'on leave', 'on_leave') %}
+                <div style="{{ pill_base }} background-color: #fef3c7; color: #b45309;"><i class="fa-solid fa-user-clock"></i> Leave</div>
+              {% elif status.lower() == 'weekend-leave' %}
+                <div style="{{ pill_base }} background-color: #f3f4f6; color: #6b7280;"><i class="fa-solid fa-couch"></i> Weekend</div>
+              {% else %}
+                <div style="{{ pill_base }} background-color: #f3f4f6; color: #6b7280;">{{ status }}</div>
+              {% endif %}
+            {% elif date_obj.weekday() >= 5 and is_current_month and not status %}
+              <!-- Unmarked Weekend -->
+              <div style="{{ pill_base }} background-color: #f3f4f6; color: #6b7280;"><i class="fa-solid fa-couch"></i> Weekend</div>
+            {% endif %}
+            
+          </div>
+        {% endfor %}
+      {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

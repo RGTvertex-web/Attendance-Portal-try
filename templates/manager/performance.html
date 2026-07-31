@@ -1,0 +1,1024 @@
+{% extends "base_manager.html" %}
+
+{% block page_title %}Monthly Performance{% endblock %}
+
+{% block content %}
+<style>
+  /* ── Page shell ── */
+  .hrm-page {
+    padding: 2rem 2.5rem 3rem;
+    background: #f8fafc;
+    min-height: 100%;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  /* ── Page header ── */
+  .page-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .page-top-bar h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+
+  .page-top-bar p {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin: 0.25rem 0 0;
+    font-weight: 400;
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .stat-pill {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 99px;
+    padding: 0.4rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  }
+
+  .stat-pill i {
+    color: #7c3aed;
+  }
+
+  .stat-pill strong {
+    color: #0f172a;
+  }
+
+  /* ── Full Width Stacked Layout (Utilize 100% screen width) ── */
+  .perf-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* ── Cards ── */
+  .perf-card {
+    background: #fff;
+    border-radius: 1.25rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .perf-card-header {
+    padding: 1.25rem 1.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    background: linear-gradient(to right, #faf5ff, #fff);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .perf-card-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .perf-card-title i {
+    color: #7c3aed;
+    font-size: 1.1rem;
+  }
+
+  .perf-card-body {
+    padding: 1.75rem;
+  }
+
+  /* ── Form elements ── */
+  .form-field {
+    margin-bottom: 1.25rem;
+  }
+
+  .form-label-hrm {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 0.45rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .form-control-hrm {
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.75rem;
+    padding: 0.65rem 1rem;
+    font-size: 0.9rem;
+    font-family: inherit;
+    color: #0f172a;
+    background: #fff;
+    outline: none;
+    transition: all 0.2s;
+    box-sizing: border-box;
+  }
+
+  .form-control-hrm:focus {
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+  }
+
+  .form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  @media (max-width: 650px) {
+    .form-row-2 {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .form-row-3 {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  @media (max-width: 850px) {
+    .form-row-3 {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .task-tracking-row {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .task-tracking-row .form-field {
+    flex: 1;
+    min-width: 200px;
+    max-width: 320px;
+  }
+
+  /* ── Rubric Section ── */
+  .criteria-heading {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 1.75rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .criteria-heading i {
+    color: #7c3aed;
+  }
+
+  .rubric-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+  }
+
+  @media (max-width: 768px) {
+    .rubric-list {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .rubric-item:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .rubric-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.85rem;
+    padding: 0.7rem 1.1rem;
+    transition: all 0.2s;
+    gap: 0.75rem;
+  }
+
+  .rubric-item:hover,
+  .rubric-item:focus-within {
+    background: #fff;
+    border-color: #a78bfa;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.06);
+  }
+
+  .rubric-label {
+    font-size: 0.9rem;
+    color: #1e293b;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex: 1;
+  }
+
+  .rubric-label i {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .rubric-item:hover .rubric-label i {
+    color: #7c3aed;
+  }
+
+  .rubric-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.65rem;
+    padding: 0.25rem 0.6rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    transition: border-color 0.2s;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .rubric-item:focus-within .rubric-input-group {
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.15);
+  }
+
+  .rubric-input {
+    width: 45px;
+    border: none;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+    text-align: center;
+    font-family: inherit;
+    outline: none;
+    background: transparent;
+  }
+
+  .rubric-max {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* ── Live Score Banner ── */
+  .score-summary-banner {
+    background: linear-gradient(135deg, #3b0764, #6d28d9);
+    color: #fff;
+    border-radius: 1rem;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 1.5rem 0;
+    box-shadow: 0 10px 25px -5px rgba(109, 40, 217, 0.3);
+  }
+
+  .banner-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #c4b5fd;
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+  }
+
+  .banner-score {
+    font-size: 1.75rem;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 0.2rem;
+  }
+
+  .banner-score span {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #ddd6fe;
+  }
+
+  .grade-badge-large {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 99px;
+    padding: 0.4rem 1.1rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Submit Button ── */
+  .btn-submit-perf {
+    width: 100%;
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    color: #fff;
+    border: none;
+    border-radius: 0.85rem;
+    padding: 0.9rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+    margin-top: 1rem;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+  }
+
+  .btn-submit-perf:hover {
+    background: linear-gradient(135deg, #6d28d9, #5b21b6);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(124, 58, 237, 0.35);
+  }
+
+  /* ── Reports table ── */
+  .rpt-tbl {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .rpt-tbl thead th {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.9rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .rpt-tbl thead th:first-child {
+    padding-left: 1.75rem;
+  }
+
+  .rpt-tbl thead th:last-child {
+    padding-right: 1.75rem;
+    text-align: right;
+  }
+
+  .rpt-tbl tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s;
+  }
+
+  .rpt-tbl tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .rpt-tbl tbody tr:hover {
+    background: #fafaff;
+  }
+
+  .rpt-tbl td {
+    padding: 1rem 1.25rem;
+    vertical-align: middle;
+    font-size: 0.88rem;
+    color: #334155;
+  }
+
+  .rpt-tbl td:first-child {
+    padding-left: 1.75rem;
+  }
+
+  .rpt-tbl td:last-child {
+    padding-right: 1.75rem;
+    text-align: right;
+  }
+
+  .intern-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .int-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(124, 58, 237, 0.2);
+  }
+
+  .int-name {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 0.9rem;
+  }
+
+  .int-id {
+    font-size: 0.75rem;
+    color: #94a3b8;
+  }
+
+  .period-text {
+    font-size: 0.82rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .score-pill {
+    font-weight: 800;
+    color: #0f172a;
+    font-size: 0.95rem;
+  }
+
+  /* ── Grade Badges ── */
+  .grade-badge {
+    display: inline-block;
+    border-radius: 99px;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .grade-outstanding {
+    background: #f3e8ff;
+    color: #6b21a8;
+    border: 1px solid #d8b4fe;
+  }
+
+  .grade-excellent {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+  }
+
+  .grade-good {
+    background: #dbeafe;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+  }
+
+  .grade-satisf {
+    background: #fef9c3;
+    color: #a16207;
+    border: 1px solid #fde047;
+  }
+
+  .grade-improve {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+  }
+
+  .btn-pdf {
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.65rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+    color: #475569;
+    text-decoration: none !important;
+    transition: all 0.18s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 600;
+  }
+
+  .btn-pdf:hover {
+    border-color: #7c3aed;
+    color: #7c3aed;
+    background: #faf5ff;
+    box-shadow: 0 2px 4px rgba(124, 58, 237, 0.08);
+  }
+
+  /* ── Empty State ── */
+  .empty-state-box {
+    padding: 3.5rem 2rem;
+    text-align: center;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+
+  .empty-icon-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #f3e8ff;
+    color: #7c3aed;
+    font-size: 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+    box-shadow: 0 4px 10px rgba(124, 58, 237, 0.15);
+  }
+
+  .empty-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 0.5rem;
+  }
+
+  .empty-desc {
+    font-size: 0.88rem;
+    color: #64748b;
+    line-height: 1.5;
+    margin: 0 0 2rem;
+  }
+
+  .rubric-guide {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 1.25rem;
+    text-align: left;
+  }
+
+  .guide-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .guide-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+
+  .guide-item {
+    font-size: 0.8rem;
+    color: #475569;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .badge-scale {
+    border-radius: 4px;
+    padding: 0.15rem 0.4rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .scale-out {
+    background: #7c3aed;
+  }
+
+  .scale-exc {
+    background: #16a34a;
+  }
+
+  .scale-good {
+    background: #2563eb;
+  }
+
+  .scale-sat {
+    background: #d97706;
+  }
+</style>
+
+<div class="hrm-page">
+
+  <!-- ── Page header ── -->
+  <div class="page-top-bar">
+    <div>
+      <h2>Monthly Performance Evaluations</h2>
+      <p>Assess team members, track monthly scores, and issue official performance reports.</p>
+    </div>
+    <div class="header-stats">
+      <div class="stat-pill">
+        <i class="fa-solid fa-users"></i>
+        <span>Interns: <strong>{{ interns|length }}</strong></span>
+      </div>
+      <div class="stat-pill">
+        <i class="fa-solid fa-file-circle-check"></i>
+        <span>Issued: <strong>{{ reports|length }}</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="perf-layout">
+
+    <!-- ════════════════════════════════ LEFT: FORM ════════════════════════════ -->
+    <div class="perf-card">
+      <div class="perf-card-header">
+        <h3 class="perf-card-title"><i class="fa-solid fa-clipboard-check"></i> New Monthly Evaluation</h3>
+      </div>
+      <div class="perf-card-body">
+        <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <!-- Intern & Period Row -->
+          <div class="form-row-3">
+            <div class="form-field">
+              <label class="form-label-hrm" for="intern_id">Select Intern</label>
+              <select id="intern_id" name="intern_id" class="form-control-hrm" required>
+                <option value="">Choose an intern…</option>
+                {% for intern in interns %}
+                <option value="{{ intern.id }}">{{ intern.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-field">
+              <label class="form-label-hrm d-flex justify-content-between" for="period_start">
+                <span>Period Start</span>
+                <small id="override_toggle_wrap" style="display:none;"><a href="#" id="override_period_link"
+                    style="color: #7c3aed; text-decoration: underline; font-size: 0.75rem;">Override Period</a></small>
+              </label>
+              <input type="date" id="period_start" name="period_start" class="form-control-hrm" required readonly
+                style="background-color: #f8fafc; cursor: not-allowed;">
+            </div>
+            <div class="form-field">
+              <label class="form-label-hrm" for="period_end">Period End</label>
+              <input type="date" id="period_end" name="period_end" class="form-control-hrm" required readonly
+                style="background-color: #f8fafc; cursor: not-allowed;">
+            </div>
+          </div>
+          <div id="period_status_msg" class="alert mb-3"
+            style="display:none; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.875rem; font-weight: 500;">
+          </div>
+
+          <!-- Evaluation criteria -->
+          <div class="criteria-heading"><i class="fa-solid fa-sliders"></i> Evaluation Rubric (out of 10)</div>
+
+          {% set criteria = [
+          ('initiative', 'Initiative Grade', 'fa-bolt'),
+          ('task_completion', 'Task Completion', 'fa-list-check'),
+          ('discipline', 'Behavioral Index (Discipline & Conduct)', 'fa-user-check')
+          ] %}
+
+          <div class="rubric-list">
+            {% for field, label, icon in criteria %}
+            <div class="rubric-item">
+              <label class="rubric-label" for="{{ field }}">
+                <i class="fa-solid {{ icon }}"></i> {{ label }}
+              </label>
+              <div class="rubric-input-group">
+                <input type="number" id="{{ field }}" name="{{ field }}" class="rubric-input perf-input" min="0"
+                  max="10" value="8" required>
+                <span class="rubric-max">/ 10</span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- Live Score Banner -->
+          <div class="score-summary-banner">
+            <div>
+              <div class="banner-label">Total Score</div>
+              <div class="banner-score"><span id="total_score_display">24</span> <span>/ 30</span></div>
+            </div>
+            <div style="text-align: right;">
+              <div class="banner-label" style="text-align: right;">Calculated Grade</div>
+              <span id="grade_band_display" class="grade-badge-large">Excellent</span>
+            </div>
+          </div>
+
+          <!-- Feedback -->
+          <div class="criteria-heading"><i class="fa-regular fa-comment-dots"></i> Qualitative Feedback</div>
+
+          <div class="form-row-2">
+            <div class="form-field">
+              <label class="form-label-hrm" for="strengths">Key Strengths</label>
+              <textarea id="strengths" name="strengths" class="form-control-hrm" rows="2"
+                placeholder="E.g., Exceptional problem-solving, reliable task execution..." required></textarea>
+            </div>
+            <div class="form-field">
+              <label class="form-label-hrm" for="areas_improvement">Areas for Improvement</label>
+              <textarea id="areas_improvement" name="areas_improvement" class="form-control-hrm" rows="2"
+                placeholder="E.g., Could communicate progress earlier when blocked..." required></textarea>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label-hrm" for="overall_comments">Manager Summary Comments</label>
+            <textarea id="overall_comments" name="overall_comments" class="form-control-hrm" rows="3"
+              placeholder="Overall summary of the intern's contribution this month..." required></textarea>
+          </div>
+
+          <button type="submit" class="btn-submit-perf">
+            <i class="fa-solid fa-paper-plane"></i> Issue Monthly Report
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════ RIGHT: TABLE / EMPTY STATE ════════════════════════════ -->
+    <div class="perf-card">
+      <div class="perf-card-header">
+        <h3 class="perf-card-title"><i class="fa-solid fa-history"></i> Recent Evaluations</h3>
+        {% if reports %}
+        <span class="stat-pill" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">Total: {{ reports|length }}</span>
+        {% endif %}
+      </div>
+
+      {% if reports %}
+      <div class="table-responsive">
+        <table class="rpt-tbl" data-paginate="true">
+          <thead>
+            <tr>
+              <th>Intern</th>
+              <th>Period</th>
+              <th>Tasks</th>
+              <th>Rubric Score</th>
+              <th>PDF Summary (10-Pt)</th>
+              <th>Milestone Standing</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for report in reports %}
+            <tr>
+              <td>
+                <div class="intern-cell">
+                  <div class="int-avatar">
+                    {{ report.intern_avatar or 'IN' }}
+                  </div>
+                  <div>
+                    <div class="int-name">
+                      {{ report.intern_name or 'Unknown Intern' }}
+                    </div>
+                    <div class="int-id">
+                      ID: <strong style="color:#0f172a;">{{ report.intern_code or report.intern_id }}</strong>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="period-text">{{ report.period_start }}<br>→ {{ report.period_end }}</span>
+              </td>
+              <td>
+                <span style="font-weight: 700; color: #1e293b;">{{ report.derived_tasks_completed }} / {{
+                  report.derived_tasks_assigned }}</span><br>
+                <span style="font-size: 0.75rem; color: #64748b;">{{ report.derived_completion_pct }}</span>
+              </td>
+              <td><span class="score-pill">{{ report.total_score }}/30</span></td>
+              <td>
+                <div style="font-weight: 700; color: #0f172a; font-size: 0.85rem;">Obtained: {{
+                  report.summary.obtained_score }} / 10</div>
+                <div style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">
+                  Init: <strong>{{ report.summary.initiative_grade }}</strong> | Behav: <strong>{{
+                    report.summary.behavioral_index }}</strong>
+                </div>
+              </td>
+              <td>
+                {% if report.summary.milestone_standing == 'PASS' %}
+                <span class="badge"
+                  style="background: #dcfce7; color: #15803d; font-weight: 700; font-size: 0.72rem; border: 1px solid #bbf7d0; padding: 0.3rem 0.6rem; border-radius: 9999px;">PASS
+                  (≥5.0)</span>
+                {% elif report.summary.milestone_standing == 'FAIL' %}
+                <span class="badge"
+                  style="background: #fee2e2; color: #b91c1c; font-weight: 700; font-size: 0.72rem; border: 1px solid #fecaca; padding: 0.3rem 0.6rem; border-radius: 9999px;">FAIL
+                  (<5.0)</span>
+                {% else %}
+                    <span class="badge"
+                      style="background: #f1f5f9; color: #64748b; font-weight: 700; font-size: 0.72rem; border: 1px solid #e2e8f0; padding: 0.3rem 0.6rem; border-radius: 9999px;">{{
+                      report.summary.milestone_standing }}</span>
+                    {% endif %}
+                    <div style="font-size: 0.68rem; color: #64748b; margin-top: 3px;">{{ report.grade_band }}</div>
+              </td>
+              <td>
+                <a href="{{ url_for('manager.export_performance_report_pdf', intern_id=report.intern_id) }}" target="_blank"
+                  class="btn-pdf" title="Export PDF Certificate">
+                  <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> PDF
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state-box">
+        <div class="empty-icon-circle"><i class="fa-solid fa-award"></i></div>
+        <h4 class="empty-title">No Evaluations Issued Yet</h4>
+        <p class="empty-desc">When you submit a monthly performance evaluation for an intern using the rubric on the
+          left, official records and derived PDF summary metrics will appear here.</p>
+
+        <!-- PDF Placeholder Preview -->
+        <div class="p-3 my-3"
+          style="background: #fff; border: 1px dashed #cbd5e1; border-radius: 0.75rem; max-width: 600px; margin: 1rem auto; text-align: left;">
+          <div
+            style="font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.5rem;">
+            <i class="fa-solid fa-file-invoice" style="color: #7c3aed;"></i> Official PDF Export Summary (No Report
+            Issued Yet)</div>
+          <div class="row text-center" style="font-size: 0.85rem;">
+            <div class="col-3">Init: <strong>0</strong>/10</div>
+            <div class="col-3">Tasks: <strong>0</strong>/10 (0%)</div>
+            <div class="col-3">Behav: <strong>–</strong>/10</div>
+            <div class="col-3">Obt: <strong>–</strong>/10 <span class="badge"
+                style="background: #f1f5f9; color: #64748b; font-size: 0.65rem;">IN PROGRESS</span></div>
+          </div>
+        </div>
+
+        <div class="rubric-guide">
+          <div class="guide-title"><i class="fa-solid fa-circle-info"></i> Grading Scale Breakdown</div>
+          <div class="guide-grid">
+            <div class="guide-item"><span class="badge-scale scale-out">90%+</span> Outstanding</div>
+            <div class="guide-item"><span class="badge-scale scale-exc">80-89%</span> Excellent</div>
+            <div class="guide-item"><span class="badge-scale scale-good">70-79%</span> Good</div>
+            <div class="guide-item"><span class="badge-scale scale-sat">60-69%</span> Satisfactory</div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+  </div><!-- /perf-layout -->
+
+</div><!-- /hrm-page -->
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const inputs = document.querySelectorAll('.perf-input');
+    const totalDisp = document.getElementById('total_score_display');
+    const gradeDisp = document.getElementById('grade_band_display');
+
+    const GRADES = [
+      { min: 90, label: 'Outstanding' },
+      { min: 80, label: 'Excellent' },
+      { min: 70, label: 'Good' },
+      { min: 60, label: 'Satisfactory' },
+      { min: 1, label: 'Needs Improvement' },
+    ];
+
+    function calcScore() {
+      let total = 0;
+      inputs.forEach(i => {
+        let val = parseInt(i.value);
+        if (isNaN(val) || val < 0) val = 0;
+        if (val > 10) { val = 10; i.value = 10; }
+        total += val;
+      });
+      totalDisp.textContent = total;
+      const pct = (total / 30) * 100;
+      const g = GRADES.find(x => pct >= x.min) || { label: 'Needs Improvement' };
+      gradeDisp.textContent = g.label;
+    }
+
+    inputs.forEach(i => i.addEventListener('input', calcScore));
+    calcScore(); // Run immediately on load!
+
+    // ── Auto-Fill Report Period Based on Intern Joining Date ──
+    const internSelect = document.getElementById('intern_id');
+    const pStart = document.getElementById('period_start');
+    const pEnd = document.getElementById('period_end');
+    const statusMsg = document.getElementById('period_status_msg');
+    const overrideWrap = document.getElementById('override_toggle_wrap');
+    const overrideLink = document.getElementById('override_period_link');
+
+    if (overrideLink) {
+      overrideLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        const isReadOnly = pStart.hasAttribute('readonly');
+        if (isReadOnly) {
+          pStart.removeAttribute('readonly');
+          pEnd.removeAttribute('readonly');
+          pStart.style.backgroundColor = '#ffffff';
+          pEnd.style.backgroundColor = '#ffffff';
+          pStart.style.cursor = 'text';
+          pEnd.style.cursor = 'text';
+          overrideLink.textContent = 'Lock Period (Auto)';
+          if (statusMsg) {
+            statusMsg.className = 'alert alert-warning mb-3';
+            statusMsg.style.display = 'block';
+            statusMsg.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Manual date override active. Be careful not to submit duplicates for the wrong cycle.';
+          }
+        } else {
+          pStart.setAttribute('readonly', 'readonly');
+          pEnd.setAttribute('readonly', 'readonly');
+          pStart.style.backgroundColor = '#f8fafc';
+          pEnd.style.backgroundColor = '#f8fafc';
+          pStart.style.cursor = 'not-allowed';
+          pEnd.style.cursor = 'not-allowed';
+          overrideLink.textContent = 'Override Period';
+          if (internSelect.value) internSelect.dispatchEvent(new Event('change'));
+        }
+      });
+    }
+
+    if (internSelect) {
+      internSelect.addEventListener('change', function () {
+        const internId = this.value;
+        if (!internId) {
+          pStart.value = '';
+          pEnd.value = '';
+          if (statusMsg) statusMsg.style.display = 'none';
+          if (overrideWrap) overrideWrap.style.display = 'none';
+          return;
+        }
+
+        if (statusMsg) {
+          statusMsg.style.display = 'block';
+          statusMsg.className = 'alert alert-info mb-3';
+          statusMsg.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Calculating next unreported cycle from joining date...';
+        }
+
+        fetch(`/manager/performance/next-period/${internId}`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.error) {
+              if (statusMsg) {
+                statusMsg.className = 'alert alert-danger mb-3';
+                statusMsg.textContent = data.error;
+              }
+              return;
+            }
+            pStart.value = data.period_start || '';
+            pEnd.value = data.period_end || '';
+
+            pStart.setAttribute('readonly', 'readonly');
+            pEnd.setAttribute('readonly', 'readonly');
+            pStart.style.backgroundColor = '#f8fafc';
+            pEnd.style.backgroundColor = '#f8fafc';
+            pStart.style.cursor = 'not-allowed';
+            pEnd.style.cursor = 'not-allowed';
+            if (overrideWrap) {
+              overrideWrap.style.display = 'inline-block';
+              if (overrideLink) overrideLink.textContent = 'Override Period';
+            }
+
+            if (statusMsg) {
+              statusMsg.style.display = 'block';
+              if (!data.is_due_yet) {
+                statusMsg.className = 'alert alert-success mb-3';
+                statusMsg.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>${data.message}</strong> (Auto-selected Month ${data.month})`;
+              } else {
+                statusMsg.className = 'alert alert-primary mb-3';
+                statusMsg.innerHTML = `<i class="fa-solid fa-calendar-check"></i> <strong>${data.message}</strong> (Joining Date: ${data.joining_date})`;
+              }
+            }
+          })
+          .catch(err => {
+            console.error('Error fetching period:', err);
+            if (statusMsg) {
+              statusMsg.className = 'alert alert-warning mb-3';
+              statusMsg.textContent = 'Could not auto-compute period. You may override manually.';
+            }
+          });
+      });
+    }
+  });
+</script>
+<script src="{{ url_for('static', filename='js/table_pagination.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "base_dashboard.html" %}
+
+{% block page_title %}Leave Requests{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+  <div>
+    <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 0.5rem;">Leave Requests</h1>
+    <p class="text-muted" style="margin: 0;">Review and manage all leave applications across the organization.</p>
+  </div>
+</div>
+
+<div class="card mt-4">
+  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <h3 class="card-title">All Requests</h3>
+    <form method="GET" action="{{ url_for('admin.leaves') }}" style="display: flex; gap: 0.5rem; align-items: center;">
+      <input type="text" name="search" class="form-control" placeholder="Search interns or reasons..." value="{{ search }}" style="width: 250px;" onblur="this.form.submit()">
+      <noscript><button type="submit" class="btn btn-secondary btn-sm">Search</button></noscript>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Intern</th>
+          <th>Dates</th>
+          <th>Reason</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for leave in leaves %}
+        <tr>
+          <td>
+            <div style="font-weight: 500;">{{ leave.student_name }}</div>
+            <div class="text-muted" style="font-size: 0.75rem;">
+              {{ leave.rgt_id }}
+            </div>
+          </td>
+          <td>{{ leave.start_date }} to {{ leave.end_date }}</td>
+          <td class="text-muted" style="font-size: 0.875rem;">
+            {{ leave.reason[:50] }}{% if leave.reason|length > 50 %}...{% endif %}
+          </td>
+          <td>
+            <span class="badge {% if leave.status == 'approved' %}badge-success{% elif leave.status == 'rejected' %}badge-danger{% elif leave.status == 'pending' %}badge-warning{% else %}badge-neutral{% endif %}">
+              {{ leave.status | title }}
+            </span>
+          </td>
+          <td>
+            <a href="{{ url_for('admin.leave_detail', leave_id=leave.leave_id) }}" class="btn btn-outline btn-sm">
+              Review
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center text-muted" style="padding: 3rem 0;">No leave requests found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if total_pages > 1 %}
+  <div style="padding: 1rem 1.5rem; border-top: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+    <span class="text-muted" style="font-size: 0.875rem;">Page {{ page }} of {{ total_pages }}</span>
+    <div style="display: flex; gap: 0.5rem;">
+      {% if page > 1 %}
+      <a href="{{ url_for('admin.leaves', page=page-1, search=search) }}" class="btn btn-secondary btn-sm">Previous</a>
+      {% else %}
+      <button class="btn btn-secondary btn-sm" disabled>Previous</button>
+      {% endif %}
+      
+      {% if page < total_pages %}
+      <a href="{{ url_for('admin.leaves', page=page+1, search=search) }}" class="btn btn-secondary btn-sm">Next</a>
+      {% else %}
+      <button class="btn btn-secondary btn-sm" disabled>Next</button>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

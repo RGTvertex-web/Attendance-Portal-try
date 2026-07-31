@@ -1,0 +1,137 @@
+{% extends "base_dashboard.html" %}
+
+{% block page_title %}Organization Attendance{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+  <div>
+    <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 0.5rem;">Organization Attendance</h1>
+    <p class="text-muted" style="margin: 0;">Monitor all interns' daily reports and override attendance globally.</p>
+  </div>
+</div>
+
+<!-- ── Main Content ──────────────────────────────────────────────────────────── -->
+<div class="card">
+  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <h3 class="card-title">Intern Reports</h3>
+    <form method="GET" action="{{ url_for('admin.attendance') }}" style="display: flex; gap: 0.5rem; align-items: center;">
+      <input type="text" name="search" class="form-control" placeholder="Search name/email..." value="{{ search }}" style="width: 200px;" onblur="this.form.submit()">
+      <input type="date" name="date" class="form-control" value="{{ today }}" max="{{ today }}" style="width: auto;" required onchange="this.form.submit()">
+      <noscript><button type="submit" class="btn btn-secondary btn-sm">View <i class="fa-solid fa-arrow-right"></i></button></noscript>
+    </form>
+  </div>
+  <div class="card-body">
+    {% if students %}
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        {% for student in students %}
+        <div style="padding: 1.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-md);">
+          
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+            <div>
+              <div style="font-weight: 600; font-size: 1.125rem;">
+                {{ student.name }}
+                {% if student.intern_id %}
+                  <span class="text-muted" style="font-size: 0.8em; font-weight: 500;">({{ student.intern_id }})</span>
+                {% endif %}
+                {% if not student.latest_report or student.latest_report.submitted_at[:10] != today %}
+                  <span class="badge badge-warning" style="margin-left: 0.5rem;"><i class="fa-solid fa-circle-exclamation" style="margin-right: 4px;"></i> Missing Report</span>
+                {% endif %}
+              </div>
+              <div class="text-muted" style="font-size: 0.75rem;">
+                Manager: {{ student.manager_name if student.manager_name else 'None' }}
+              </div>
+            </div>
+            <div>
+              <span class="badge {% if student.today_status == 'present' %}badge-success{% elif student.today_status == 'absent' %}badge-danger{% elif student.today_status == 'on_leave' %}badge-info{% else %}badge-warning{% endif %}">
+                {{ student.today_status | replace('_', ' ') | title }}
+              </span>
+            </div>
+          </div>
+
+          {% if student.latest_report and student.latest_report.submitted_at[:10] == today %}
+            <div style="font-size: 0.875rem; background: var(--color-surface-hover); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1rem;">
+              <div style="margin-bottom: 0.5rem;"><strong>Given:</strong> {{ student.latest_report.report_data.given }}</div>
+              <div style="margin-bottom: 0.5rem;"><strong>Done:</strong> {{ student.latest_report.report_data.done }}</div>
+              {% if student.latest_report.report_data.remaining %}
+              <div><strong>Remaining:</strong> {{ student.latest_report.report_data.remaining }}</div>
+              {% endif %}
+              <div class="text-muted" style="margin-top: 0.5rem; font-size: 0.75rem;">Submitted at {{ student.latest_report.submitted_at[11:16] }} UTC</div>
+            </div>
+          {% else %}
+            <div class="text-muted" style="font-size: 0.875rem; margin-bottom: 1rem; font-style: italic;">
+              No report submitted yet for today.
+            </div>
+          {% endif %}
+
+          <!-- Mark Attendance Actions -->
+          <div style="display: flex; gap: 0.5rem; margin-top: auto;">
+            {% if is_weekend %}
+              <div class="text-muted" style="font-style: italic; align-self: center; padding: 0.25rem 0;">
+                <i class="fa-solid fa-umbrella-beach"></i> Weekend (Auto-Leave)
+              </div>
+            {% else %}
+              {% if student.today_status != 'present' %}
+              <form method="POST" action="{{ url_for('admin.mark_attendance') }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="student_id" value="{{ student.id }}">
+                <input type="hidden" name="date" value="{{ today }}">
+                <input type="hidden" name="status" value="present">
+                <button type="submit" class="btn btn-primary btn-sm">
+                  Mark Present <i class="fa-solid fa-check"></i>
+                </button>
+              </form>
+              {% endif %}
+
+              {% if student.today_status != 'absent' %}
+              <form method="POST" action="{{ url_for('admin.mark_attendance') }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="student_id" value="{{ student.id }}">
+                <input type="hidden" name="date" value="{{ today }}">
+                <input type="hidden" name="status" value="absent">
+                <button type="submit" class="btn btn-secondary btn-sm">
+                  Mark Absent <i class="fa-solid fa-xmark"></i>
+                </button>
+              </form>
+              {% endif %}
+
+              {% if student.today_status != 'on_leave' %}
+              <form method="POST" action="{{ url_for('admin.mark_attendance') }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="student_id" value="{{ student.id }}">
+                <input type="hidden" name="date" value="{{ today }}">
+                <input type="hidden" name="status" value="on_leave">
+                <button type="submit" class="btn btn-secondary btn-sm">
+                  Mark On Leave <i class="fa-solid fa-user-clock"></i>
+                </button>
+              </form>
+              {% endif %}
+            {% endif %}
+          </div>
+
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="text-center text-muted" style="padding: 2rem 0;">No interns found.</div>
+    {% endif %}
+  </div>
+  {% if total_pages > 1 %}
+  <div style="padding: 1rem 1.5rem; border-top: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+    <span class="text-muted" style="font-size: 0.875rem;">Page {{ page }} of {{ total_pages }}</span>
+    <div style="display: flex; gap: 0.5rem;">
+      {% if page > 1 %}
+      <a href="{{ url_for('admin.attendance', page=page-1, search=search, date=today) }}" class="btn btn-secondary btn-sm">Previous</a>
+      {% else %}
+      <button class="btn btn-secondary btn-sm" disabled>Previous</button>
+      {% endif %}
+      
+      {% if page < total_pages %}
+      <a href="{{ url_for('admin.attendance', page=page+1, search=search, date=today) }}" class="btn btn-secondary btn-sm">Next</a>
+      {% else %}
+      <button class="btn btn-secondary btn-sm" disabled>Next</button>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

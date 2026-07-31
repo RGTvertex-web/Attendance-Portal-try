@@ -1,0 +1,178 @@
+{% extends "base_dashboard.html" %}
+
+{% block page_title %}My Dashboard{% endblock %}
+
+{% block content %}
+<!-- ── Hero Banner ─────────────────────────────────────────────────────────── -->
+<div class="hero-banner">
+  <div class="hero-tag">
+    <i class="fa-solid fa-circle" style="color: #111; font-size:0.5rem;"></i>
+    Attendance: {{ att_summary.percentage }}% &nbsp;·&nbsp; {{ att_summary.present }} Present &nbsp;·&nbsp; {{ att_summary.absent }} Absent
+  </div>
+  <h1 class="hero-headline">Welcome back, {{ g.user.name }}.</h1>
+  <p class="hero-sub">Submit your daily report and track your attendance below.</p>
+
+</div>
+
+<!-- ── At-Risk banner ──────────────────────────────────────────────────────── -->
+{% if g.user.status == 'at_risk' %}
+<div class="alert alert-danger" style="margin-bottom: 2rem;">
+  <span style="font-size:1.5rem;">🔥</span>
+  <div>
+    <div style="font-weight: 600;">You are flagged as At-Risk</div>
+    <div class="text-muted" style="font-size: 0.875rem;">Your attendance is below the required threshold. Contact your manager immediately.</div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Stat Cards ─────────────────────────────────────────────────────────── -->
+<div class="card mb-4" style="border-left: 4px solid var(--primary);">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title" style="margin: 0;">Internship Status</h3>
+    {% if cycle_data.remaining_months > 0 %}
+    <a href="{{ url_for('intern.extension_request') }}" class="btn btn-outline-primary btn-sm">Request Extension</a>
+    {% endif %}
+  </div>
+  <div class="card-body" style="padding: 1.5rem;">
+    <div class="status-grid">
+      <div>
+        <div class="text-muted" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">RGT ID</div>
+        <div style="font-weight: 600; font-size: 1.1rem; color: var(--text-dark);">{{ g.user.intern_id or "Not Assigned" }}</div>
+      </div>
+      <div>
+        <div class="text-muted" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Joining Date</div>
+        <div style="font-weight: 600; font-size: 1.1rem; color: var(--text-dark);">
+          {{ cycle_data.joining_date }}
+          {% if cycle_data.is_estimated_joining_date %}
+          <span class="badge bg-warning text-dark ms-2" title="Unset — using signup date as estimate" style="font-size: 0.7rem; vertical-align: middle;">Estimated</span>
+          {% endif %}
+        </div>
+      </div>
+      <div>
+        <div class="text-muted" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Current Month</div>
+        <div style="font-weight: 600; font-size: 1.1rem; color: var(--text-dark);">Month {{ cycle_data.current_month }} of {{ cycle_data.duration_months }}</div>
+      </div>
+      <div>
+        <div class="text-muted" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Expected Completion</div>
+        <div style="font-weight: 600; font-size: 1.1rem; color: var(--text-dark);">{{ cycle_data.expected_completion_date }}</div>
+      </div>
+      <div>
+        <div class="text-muted" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Current Cycle</div>
+        <div style="font-weight: 600; font-size: 1.1rem; color: var(--text-dark);">{{ cycle_data.current_cycle_start }} &rarr; {{ cycle_data.current_cycle_end }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="kpi-row">
+  <div class="kpi-card">
+    <div class="kpi-icon icon-green"><i class="fa-solid fa-check"></i></div>
+    <div class="kpi-details">
+      <div class="kpi-value">{{ att_summary.present }}</div>
+      <div class="kpi-label">Present Days</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon icon-blue"><i class="fa-solid fa-file-signature"></i></div>
+    <div class="kpi-details">
+      <div class="kpi-value">{{ submissions | length }}</div>
+      <div class="kpi-label">Total Reports</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon icon-red"><i class="fa-solid fa-xmark"></i></div>
+    <div class="kpi-details">
+      <div class="kpi-value">{{ att_summary.absent }}</div>
+      <div class="kpi-label">Absent Days</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon icon-amber"><i class="fa-solid fa-percent"></i></div>
+    <div class="kpi-details">
+      <div class="kpi-value">{{ att_summary.percentage }}%</div>
+      <div class="kpi-label">Attendance Rate</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Main Grid ───────────────────────────────────────────────────────────── -->
+<div class="grid-cols-2 mt-4 mb-4">
+
+  <!-- Left: Submit Daily Report -->
+  <div class="card mb-0">
+    <div class="card-header">
+      <h3 class="card-title">{% if today_report %}Update Daily Report{% else %}Submit Daily Report{% endif %}</h3>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('intern.submit_report') }}" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="source_page" value="dashboard">
+        
+        <div class="form-group">
+          <label class="form-label" for="task_given">What task was given today?</label>
+          <textarea id="task_given" name="task_given" class="form-control" rows="2" placeholder="Describe the task given in the meeting..." required>{% if today_report %}{{ today_report.report_data.given }}{% endif %}</textarea>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="task_done">How much is done?</label>
+          <textarea id="task_done" name="task_done" class="form-control" rows="3" placeholder="Describe what you completed..." required>{% if today_report %}{{ today_report.report_data.done }}{% endif %}</textarea>
+        </div>
+        
+        <div class="form-group mb-4">
+          <label class="form-label" for="task_remaining">How much is remaining?</label>
+          <textarea id="task_remaining" name="task_remaining" class="form-control" rows="2" placeholder="What is left for tomorrow?" required>{% if today_report %}{{ today_report.report_data.remaining }}{% endif %}</textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary w-100">{% if today_report %}Update Report{% else %}Submit Report{% endif %} <i class="fa-solid fa-arrow-right"></i></button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right: Warnings -->
+  <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+
+    <!-- Warnings -->
+    {% if warnings %}
+    <div class="card mb-0">
+      <div class="card-header">
+        <h3 class="card-title">My Warnings ({{ warnings | length }})</h3>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <tbody>
+              {% for w in warnings %}
+              <tr>
+                <td>
+                  <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                    <div style="color: var(--color-danger); padding-top:2px;"><i class="fa-solid fa-circle-exclamation"></i></div>
+                    <div>
+                      <div style="font-weight: 500; margin-bottom: 0.25rem;">{{ w.reason[:100] }}{% if w.reason|length > 100 %}…{% endif %}</div>
+                      <div class="text-muted" style="font-size: 0.75rem;">{{ w.date }} · By {{ w.issued_by }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style="text-align:right;">
+                  {% if w.acknowledged == 'yes' %}
+                    <span class="badge badge-success">Ack</span>
+                  {% else %}
+                    <span class="badge badge-warning">New</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+</script>
+{% endblock %}
