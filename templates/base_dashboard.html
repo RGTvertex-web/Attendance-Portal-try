@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>RGTvertex Intern Portal</title>
+  <title>RGTvertex – {{ self.page_title() }}</title>
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/brand/favicon.svg') }}">
 
-  <!-- Fonts: Inter (body) + Playfair Display (headings) -->
+  <!-- Fonts: Inter + Playfair Display -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 
-  <!-- FontAwesome -->
+  <!-- FontAwesome 6 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
 
   <!-- Chart.js -->
@@ -22,368 +22,253 @@
 
   <!-- Theme -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
-
 </head>
-<body class="dashboard-body">
-  <canvas id="network-bg"></canvas>
+<body class="manager-body">
 
-  <!-- ── Top Nav ──────────────────────────────────────────────────────────── -->
-  <header class="topnav">
+  <div class="manager-layout">
 
-    <!-- Logo -->
-    <a href="#" class="topnav-logo">
-      <div class="logo-icon-wrapper">
-        <img class="logo-icon" src="{{ url_for('static', filename='img/brand/favicon.svg') }}" alt="RGTvertex Icon">
+    <!-- ════════════════════════════════════════════════════════════════════════
+         LEFT SIDEBAR
+         ════════════════════════════════════════════════════════════════════════ -->
+    <aside class="manager-sidebar" id="managerSidebar">
+
+      <!-- Logo + user avatar row -->
+      <div class="sidebar-header">
+        <a href="{{ url_for('manager.dashboard') }}" class="sidebar-logo">
+          <div class="logo-icon-wrapper">
+            <img class="logo-icon" src="{{ url_for('static', filename='img/brand/favicon.svg') }}" alt="RGTvertex">
+          </div>
+          <span class="logo-text">RGTvertex</span>
+        </a>
+        <div class="sidebar-header-avatar" title="{{ g.user.name }}">
+          {{ g.user.name[:2]|upper }}
+        </div>
       </div>
-      <span class="logo-text">RGTvertex</span>
-    </a>
 
-    <!-- Role-scoped horizontal nav links -->
-    <nav class="topnav-links">
-      {% if g.user_role == 'admin' %}
-        <a href="{{ url_for('admin.dashboard') }}"
-           class="topnav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
-          <i class="fa-solid fa-chart-pie"></i> Dashboard
-        </a>
-        <a href="{{ url_for('admin.users') }}"
-           class="topnav-link {% if request.endpoint in ('admin.users', 'admin.create_user', 'admin.edit_user') %}active{% endif %}">
-          <i class="fa-solid fa-users"></i> Users
-        </a>
-        <a href="{{ url_for('admin.attendance') }}"
-           class="topnav-link {% if request.endpoint == 'admin.attendance' %}active{% endif %}">
-          <i class="fa-solid fa-calendar-check"></i> Attendance
-        </a>
-        <a href="{{ url_for('admin.warnings') }}"
-           class="topnav-link {% if request.endpoint == 'admin.warnings' %}active{% endif %}">
-          <i class="fa-solid fa-triangle-exclamation"></i> Warnings
-        </a>
-        <a href="{{ url_for('admin.reports') }}"
-           class="topnav-link {% if request.endpoint == 'admin.reports' %}active{% endif %}">
-          <i class="fa-solid fa-file-alt"></i> Reports
-        </a>
-        <a href="{{ url_for('admin.performance') }}"
-           class="topnav-link {% if request.endpoint == 'admin.performance' %}active{% endif %}">
-          <i class="fa-solid fa-star"></i> Performance
-        </a>
+      <!-- Scrollable nav area -->
+      <div class="sidebar-menu-scroll">
 
-        <a href="{{ url_for('admin.announcements') }}"
-           class="topnav-link {% if request.endpoint == 'admin.announcements' %}active{% endif %}">
-          <i class="fa-solid fa-bullhorn"></i> Announcements
-        </a>
-        
-        <div class="dropdown" style="position: relative;">
-          <button class="topnav-link dropdown-toggle" data-bs-toggle="dropdown" style="background:none; border:none; cursor:pointer; font-family:inherit;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'block' ? 'none' : 'block'">
-            <i class="fa-solid fa-gear"></i> Settings <i class="fa-solid fa-chevron-down" style="font-size:0.65rem;"></i>
+        <!-- ── MAIN MENU ── -->
+        <div class="sidebar-section">
+          <p class="sidebar-section-title">Main Menu</p>
+          <nav class="sidebar-nav">
+            <a href="{{ url_for('manager.dashboard') }}"
+               class="sidebar-link {% if request.endpoint == 'manager.dashboard' %}active{% endif %}">
+              <i class="fa-solid fa-border-all"></i><span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('manager.attendance') }}"
+               class="sidebar-link {% if request.endpoint == 'manager.attendance' %}active{% endif %}">
+              <i class="fa-solid fa-calendar-check"></i><span>Attendance</span>
+            </a>
+            <a href="{{ url_for('manager.leaves') }}"
+               class="sidebar-link {% if request.endpoint in ('manager.leaves', 'manager.leave_detail') %}active{% endif %}">
+              <i class="fa-solid fa-user-clock"></i><span>Leave Management</span>
+            </a>
+            <a href="{{ url_for('manager.reports') }}"
+               class="sidebar-link {% if request.endpoint == 'manager.reports' %}active{% endif %}">
+              <i class="fa-solid fa-chart-bar"></i><span>Reports</span>
+            </a>
+            <a href="{{ url_for('manager.performance') }}"
+               class="sidebar-link {% if request.endpoint == 'manager.performance' %}active{% endif %}">
+              <i class="fa-solid fa-star"></i><span>Performance</span>
+            </a>
+          </nav>
+        </div>
+
+        <!-- ── TEAM MANAGEMENT ── -->
+        <div class="sidebar-section mt-4">
+          <p class="sidebar-section-title">Team Management</p>
+          <nav class="sidebar-nav">
+            <a href="{{ url_for('manager.extensions') }}"
+               class="sidebar-link {% if request.endpoint == 'manager.extensions' %}active{% endif %}">
+              <i class="fa-solid fa-clock-rotate-left"></i><span>Extensions</span>
+            </a>
+          </nav>
+        </div>
+
+      </div><!-- /sidebar-menu-scroll -->
+
+      <!-- Announcements chip -->
+      <div class="sidebar-announcements" onclick="openAnnouncementsModal()" style="cursor: pointer; transition: all 0.2s;" title="Click to view company updates & announcements">
+        <div class="announce-icon"><i class="fa-solid fa-bullhorn"></i></div>
+        <div>
+          <div class="announce-title">Announcements</div>
+          <div class="announce-sub">Stay updated with RGTvertex</div>
+        </div>
+      </div>
+
+      <!-- Profile chip -->
+      <div class="sidebar-footer">
+        <div class="profile-chip">
+          <div class="profile-avatar">{{ g.user.name[:2]|upper }}</div>
+          <div class="profile-info">
+            <div class="profile-name">{{ g.user.name }}</div>
+            <div class="profile-role">Manager</div>
+          </div>
+          <a href="{{ url_for('auth.logout') }}" class="profile-logout" title="Log Out">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          </a>
+        </div>
+      </div>
+
+    </aside><!-- /manager-sidebar -->
+
+
+    <!-- ════════════════════════════════════════════════════════════════════════
+         MAIN CONTENT AREA
+         ════════════════════════════════════════════════════════════════════════ -->
+    <div class="manager-main-content">
+
+      <!-- Top Header: [mobile + title] [search] [bell] -->
+      <header class="manager-top-header">
+
+        <div class="header-left">
+          <button class="mobile-toggle-btn" id="mobileSidebarToggle" aria-label="Toggle sidebar">
+            <i class="fa-solid fa-bars"></i>
           </button>
-          <div class="dropdown-menu" style="top:calc(100% + 4px); position: absolute; z-index: 1050;">
-            <a href="{{ url_for('admin.holidays') }}"><i class="fa-solid fa-umbrella-beach"></i> Holidays</a>
-            <a href="{{ url_for('admin.settings') }}"><i class="fa-solid fa-sliders"></i> Org Settings</a>
-            <a href="{{ url_for('admin.audit_logs') }}"><i class="fa-solid fa-clipboard-list"></i> Audit Log</a>
+          <h1 class="header-page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+        </div>
+
+        <div class="header-center" style="position: relative; flex: 1; max-width: 480px; margin: 0 1.5rem;">
+          <style>
+            .qs-item {
+              padding: 0.85rem 1rem; border-radius: 0.85rem; transition: background 0.15s; border-bottom: 1px solid #f1f5f9;
+              display: flex; flex-direction: column; gap: 0.65rem; text-decoration: none !important;
+            }
+            .qs-item:last-child { border-bottom: none; }
+            .qs-item:hover { background: #faf5ff; }
+            .qs-user-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+            .qs-avatar { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #7c3aed, #4c1d95); color: #fff; font-weight: 800; font-size: 0.82rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 6px rgba(124, 58, 237, 0.2); }
+            .qs-name { font-weight: 800; color: #0f172a; font-size: 0.92rem; margin-bottom: 0.15rem; }
+            .qs-email { font-size: 0.75rem; color: #64748b; font-weight: 500; }
+            .qs-id-badge { font-size: 0.68rem; font-weight: 700; color: #7c3aed; background: #f3e8ff; padding: 0.2rem 0.55rem; border-radius: 99px; border: 1px solid #ddd6fe; }
+            .qs-actions-row { display: flex; gap: 0.45rem; flex-wrap: wrap; }
+            .qs-action-btn {
+              background: #fff; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.35rem 0.7rem;
+              font-size: 0.75rem; font-weight: 700; color: #475569; text-decoration: none !important;
+              display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.15s;
+            }
+            .qs-action-btn:hover { border-color: #7c3aed; color: #7c3aed; background: #faf5ff; transform: translateY(-1px); box-shadow: 0 2px 5px rgba(124,58,237,0.1); }
+          </style>
+          <div class="search-bar-wrapper" style="position: relative; display: flex; align-items: center; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 99px; padding: 0.6rem 1.25rem; transition: all 0.2s; width: 100%;">
+            <i class="fa-solid fa-magnifying-glass" style="color: #64748b; font-size: 0.9rem; margin-right: 0.6rem;"></i>
+            <input type="text" id="globalQuickSearchInput" class="search-input" placeholder="Search team by Name, Email, or RGT ID..." style="border: none; background: transparent; outline: none; font-size: 0.88rem; color: #0f172a; width: 100%; font-family: inherit;">
+            <span id="quickSearchSpinner" style="display: none; color: #7c3aed; font-size: 0.85rem;"><i class="fa-solid fa-spinner fa-spin"></i></span>
+          </div>
+
+          <!-- Live Search Dropdown Menu -->
+          <div id="quickSearchDropdown" style="display: none; position: absolute; top: calc(100% + 8px); left: 0; right: 0; background: #fff; border: 1px solid #cbd5e1; border-radius: 1.25rem; box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.18); z-index: 1000; overflow: hidden; max-height: 440px; overflow-y: auto;">
+            <div style="padding: 0.8rem 1.25rem; background: #f8fafc; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 0.72rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;"><i class="fa-solid fa-users" style="color:#7c3aed; margin-right: 0.4rem;"></i> Quick Team Lookup & Actions</span>
+              <span id="quickSearchCount" style="font-size: 0.75rem; font-weight: 700; color: #7c3aed; background: #f3e8ff; padding: 0.18rem 0.65rem; border-radius: 99px;">0 found</span>
+            </div>
+            <div id="quickSearchResultsBody" style="padding: 0.6rem;">
+              <!-- Results inserted via JS -->
+            </div>
           </div>
         </div>
 
-      {% elif g.user_role == 'manager' %}
-        <a href="{{ url_for('manager.dashboard') }}"
-           class="topnav-link {% if request.endpoint == 'manager.dashboard' %}active{% endif %}">
-          <i class="fa-solid fa-chart-pie"></i> Dashboard
-        </a>
-        <a href="{{ url_for('manager.attendance') }}"
-           class="topnav-link {% if request.endpoint == 'manager.attendance' %}active{% endif %}">
-          <i class="fa-solid fa-calendar-check"></i> Attendance
-        </a>
-        <a href="{{ url_for('manager.leaves') }}"
-           class="topnav-link {% if request.endpoint in ('manager.leaves', 'manager.leave_detail') %}active{% endif %}">
-          <i class="fa-solid fa-user-clock"></i> Leave Requests
-        </a>
-        <a href="{{ url_for('manager.reports') }}"
-           class="topnav-link {% if request.endpoint == 'manager.reports' %}active{% endif %}">
-          <i class="fa-solid fa-file-alt"></i> Daily Reports
-        </a>
-        <a href="{{ url_for('manager.performance') }}"
-           class="topnav-link {% if request.endpoint == 'manager.performance' %}active{% endif %}">
-          <i class="fa-solid fa-star"></i> Performance
-        </a>
+        <div class="header-right">
+        </div><!-- /header-right -->
 
-      {% elif g.user_role == 'intern' %}
-        <a href="{{ url_for('intern.dashboard') }}"
-           class="topnav-link {% if request.endpoint == 'intern.dashboard' %}active{% endif %}">
-          <i class="fa-solid fa-chart-pie"></i> Dashboard
-        </a>
-        <a href="{{ url_for('intern.attendance') }}"
-           class="topnav-link {% if request.endpoint == 'intern.attendance' %}active{% endif %}">
-          <i class="fa-solid fa-calendar-check"></i> Attendance
-        </a>
-        <a href="{{ url_for('intern.leave') }}"
-           class="topnav-link {% if request.endpoint == 'intern.leave' %}active{% endif %}">
-          <i class="fa-solid fa-user-clock"></i> Leave Request
-        </a>
-        <a href="{{ url_for('intern.reports') }}"
-           class="topnav-link {% if request.endpoint == 'intern.reports' %}active{% endif %}">
-          <i class="fa-solid fa-file-alt"></i> Daily Reports
-        </a>
-        <a href="{{ url_for('intern.performance') }}"
-           class="topnav-link {% if request.endpoint == 'intern.performance' %}active{% endif %}">
-          <i class="fa-solid fa-star"></i> Performance
-        </a>
-        <a href="{{ url_for('auth.profile') }}"
-           class="topnav-link {% if request.endpoint == 'auth.profile' %}active{% endif %}">
-          <i class="fa-solid fa-id-badge"></i> My Profile
-        </a>
-      {% endif %}
-    </nav>
+      </header><!-- /manager-top-header -->
 
-    <!-- Right: search + bell + user dropdown -->
-    <div class="topnav-right">
 
-      <div id="notificationDropdown" style="position: relative;">
-        <button class="icon-btn" title="Notifications" style="margin: 0; background: none; border: none;">
-          <i class="fa-regular fa-bell"></i>
-          {% if notifications %}
-            <span class="notification-dot"></span>
-          {% else %}
-            <span class="notification-dot" style="display: none;"></span>
-          {% endif %}
-        </button>
-        <div class="dropdown-menu" style="min-width: 250px; right: 0; left: auto; padding: 0;">
-          {% if notifications %}
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border-bottom: 1px solid var(--color-border); background-color: var(--color-surface-hover);">
-              <span style="font-size: 0.75rem; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase;">Notifications</span>
-              <button onclick="markNotificationsRead(event)" style="background: none; border: none; font-size: 0.75rem; color: var(--color-primary); cursor: pointer; padding: 0; font-weight: 500;">Mark as read</button>
-            </div>
-            <div style="max-height: 300px; overflow-y: auto; padding: 0.5rem 0;">
-              {% for note in notifications %}
-              <a href="{{ note.link }}" style="white-space: normal; line-height: 1.4; font-size: 0.875rem;">
-                <i class="fa-solid fa-circle-info text-muted"></i> {{ note.text }}
-              </a>
+      <!-- ── Scrollable page content ── -->
+      <main class="content-area" style="display: flex; flex-direction: column; min-height: calc(100vh - 100px);">
+
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div style="padding: 1rem 1.5rem 0;" class="flash-messages-container">
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">
+                {% if category == 'success' %}<i class="fa-solid fa-check-circle"></i>
+                {% elif category in ('danger', 'error') %}<i class="fa-solid fa-circle-exclamation"></i>
+                {% elif category == 'warning' %}<i class="fa-solid fa-triangle-exclamation"></i>
+                {% else %}<i class="fa-solid fa-info-circle"></i>{% endif %}
+                {{ message }}
+              </div>
             {% endfor %}
             </div>
-          {% else %}
-            <div style="padding: 1rem; text-align: center; color: var(--color-text-muted); font-size: 0.875rem;">
-              No new notifications
-            </div>
           {% endif %}
-        </div>
-      </div>
+        {% endwith %}
 
-      <div class="user-dropdown" id="userDropdown">
-        <div class="user-avatar">{{ g.user.name[0].upper() if g.user and g.user.name else '?' }}</div>
-        <div class="user-info">
-          <span class="user-name">{{ g.user.name if g.user else '' }}</span>
-          <span class="user-role">{{ g.user_role | title }}</span>
-        </div>
-        <i class="fa-solid fa-chevron-down" style="font-size:0.65rem; color: var(--color-text-muted);"></i>
-        <div class="dropdown-menu">
-          <a href="{{ url_for('auth.profile') }}">
-            <i class="fa-solid fa-user-pen"></i> My Profile
-          </a>
-          <a href="{{ url_for('auth.logout') }}">
-            <i class="fa-solid fa-arrow-right-from-bracket"></i> Log out
-          </a>
-        </div>
-      </div>
+        {% block content %}{% endblock %}
 
-      <!-- Hamburger for mobile -->
-      <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation">
-        <i class="fa-solid fa-bars" style="pointer-events: none;"></i>
-      </button>
-    </div>
-  </header>
+        <!-- Spacer to prevent content from touching the sticky footer -->
+        <div style="flex-shrink: 0; height: 3rem;"></div>
+      </main>
 
-  <!-- Mobile nav (shown when hamburger is toggled) -->
-  <nav class="mobile-nav" id="mobileNav">
-    {% if g.user_role == 'admin' %}
-      <a href="{{ url_for('admin.dashboard') }}"
-         class="topnav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
-        <i class="fa-solid fa-chart-pie"></i> Dashboard
-      </a>
-      <a href="{{ url_for('admin.users') }}"
-         class="topnav-link {% if request.endpoint in ('admin.users', 'admin.create_user', 'admin.edit_user') %}active{% endif %}">
-        <i class="fa-solid fa-users"></i> Users
-      </a>
-      <a href="{{ url_for('admin.attendance') }}"
-         class="topnav-link {% if request.endpoint == 'admin.attendance' %}active{% endif %}">
-        <i class="fa-solid fa-calendar-check"></i> Attendance
-      </a>
-      <a href="{{ url_for('admin.warnings') }}"
-         class="topnav-link {% if request.endpoint == 'admin.warnings' %}active{% endif %}">
-        <i class="fa-solid fa-triangle-exclamation"></i> Warnings
-      </a>
-      <a href="{{ url_for('reports.index') }}"
-         class="topnav-link {% if request.endpoint and 'reports' in request.endpoint %}active{% endif %}">
-        <i class="fa-solid fa-file-alt"></i> Reports
-      </a>
-      <a href="{{ url_for('admin.performance') }}"
-         class="topnav-link {% if request.endpoint == 'admin.performance' %}active{% endif %}">
-        <i class="fa-solid fa-star"></i> Performance
-      </a>
+      <!-- Footer -->
+      <footer style="background: var(--color-surface, #fff); padding: 0.85rem 1rem; border-top: 1px solid transparent; color: var(--text-muted, #64748b); font-size: 0.85rem; text-align: center; flex-shrink: 0; z-index: 10;">
+        &copy; 2026 RGTvertex. Intern Management Portal v1.0
+      </footer>
 
-      <a href="{{ url_for('admin.announcements') }}"
-         class="topnav-link {% if request.endpoint == 'admin.announcements' %}active{% endif %}">
-        <i class="fa-solid fa-bullhorn"></i> Announcements
-      </a>
-      <a href="{{ url_for('admin.holidays') }}"
-         class="topnav-link {% if request.endpoint == 'admin.holidays' %}active{% endif %}">
-        <i class="fa-solid fa-umbrella-beach"></i> Holidays
-      </a>
-      <a href="{{ url_for('admin.settings') }}"
-         class="topnav-link {% if request.endpoint == 'admin.settings' %}active{% endif %}">
-        <i class="fa-solid fa-sliders"></i> Settings
-      </a>
-      <a href="{{ url_for('admin.audit_logs') }}"
-         class="topnav-link {% if request.endpoint == 'admin.audit_logs' %}active{% endif %}">
-        <i class="fa-solid fa-clipboard-list"></i> Audit Log
-      </a>
+    </div><!-- /manager-main-content -->
 
-    {% elif g.user_role == 'manager' %}
-      <a href="{{ url_for('manager.dashboard') }}"
-         class="topnav-link {% if request.endpoint == 'manager.dashboard' %}active{% endif %}">
-        <i class="fa-solid fa-chart-pie"></i> Dashboard
-      </a>
-      <a href="{{ url_for('manager.attendance') }}"
-         class="topnav-link {% if request.endpoint == 'manager.attendance' %}active{% endif %}">
-        <i class="fa-solid fa-calendar-check"></i> Attendance
-      </a>
-      <a href="{{ url_for('manager.leaves') }}"
-         class="topnav-link {% if request.endpoint in ('manager.leaves', 'manager.leave_detail') %}active{% endif %}">
-        <i class="fa-solid fa-user-clock"></i> Leave Requests
-      </a>
-      <a href="{{ url_for('manager.reports') }}"
-         class="topnav-link {% if request.endpoint == 'manager.reports' %}active{% endif %}">
-        <i class="fa-solid fa-file-alt"></i> Reports
-      </a>
+  </div><!-- /manager-layout -->
 
-    {% elif g.user_role == 'intern' %}
-      <a href="{{ url_for('intern.dashboard') }}"
-         class="topnav-link {% if request.endpoint == 'intern.dashboard' %}active{% endif %}">
-        <i class="fa-solid fa-chart-pie"></i> Dashboard
-      </a>
-      <a href="{{ url_for('intern.attendance') }}"
-         class="topnav-link {% if request.endpoint == 'intern.attendance' %}active{% endif %}">
-        <i class="fa-solid fa-calendar-check"></i> Attendance
-      </a>
-      <a href="{{ url_for('intern.leave') }}"
-         class="topnav-link {% if request.endpoint == 'intern.leave' %}active{% endif %}">
-        <i class="fa-solid fa-user-clock"></i> Leave Request
-      </a>
-      <a href="{{ url_for('intern.reports') }}"
-         class="topnav-link {% if request.endpoint == 'intern.reports' %}active{% endif %}">
-        <i class="fa-solid fa-file-alt"></i> Daily Reports
-      </a>
-      <a href="{{ url_for('intern.performance') }}"
-         class="topnav-link {% if request.endpoint == 'intern.performance' %}active{% endif %}">
-        <i class="fa-solid fa-star"></i> Performance
-      </a>
-      <a href="{{ url_for('auth.profile') }}"
-         class="topnav-link {% if request.endpoint == 'auth.profile' %}active{% endif %}">
-        <i class="fa-solid fa-id-badge"></i> My Profile
-      </a>
-    {% endif %}
 
-    <hr style="border:none; border-top: 1px solid var(--color-border); margin: 0.5rem 0;">
-    <a href="{{ url_for('auth.logout') }}" class="topnav-link" style="color: var(--color-danger);">
-      <i class="fa-solid fa-arrow-right-from-bracket"></i> Log out
-    </a>
-  </nav>
-
-  <!-- Slim page-title bar -->
-  <div class="page-title-bar">
-    <p class="page-title">{% block page_title %}Dashboard{% endblock %}</p>
-  </div>
-
-  <!-- Main content -->
-  <main class="content-area" style="padding: 1.5rem 2rem; max-width: 1400px; margin: 0 auto; position: relative; z-index: 2; display: flex; flex-direction: column; min-height: calc(100vh - 120px);">
-    <!-- Flash messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <div class="mb-4">
-        {% for category, message in messages %}
-          {% set alert_class = 'bg-green-50 text-green-800 border-green-200' if category == 'success' else 'bg-red-50 text-red-800 border-red-200' if category == 'error' else 'bg-blue-50 text-blue-800 border-blue-200' %}
-          <div style="padding:1rem; border-radius:0.5rem; border:1px solid; margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center;" class="{{ alert_class }}">
-            <span style="font-size:0.9rem; font-weight:500;">{{ message }}</span>
-            <button type="button" onclick="this.parentElement.remove()" style="background:none; border:none; color:inherit; opacity:0.6; cursor:pointer; font-size:1.2rem; padding:0 0.2rem; line-height:1;">&times;</button>
-          </div>
-        {% endfor %}
-        </div>
-      {% endif %}
-    {% endwith %}
-
-    {% block content %}{% endblock %}
-
-    <div style="flex-shrink: 0; height: 3rem;"></div>
-    <!-- Footer -->
-    <footer style="position: sticky; bottom: 0; background: var(--color-surface, #fff); padding: 0.85rem 1rem; border-top: 1px solid var(--color-border, #e2e8f0); color: var(--text-muted, #64748b); font-size: 0.85rem; text-align: center; z-index: 10; margin-top: auto;">
-      &copy; 2026 RGTvertex. Intern Management Portal v1.0
-    </footer>
-  </main>
+  <!-- ════════════════════════════════════════════════════════════════════════
+       BASE SCRIPTS (extended by child templates via super())
+       ════════════════════════════════════════════════════════════════════════ -->
   {% block scripts %}
   <script>
-    // User dropdown toggle
-    document.getElementById('userDropdown').addEventListener('click', function(e) {
+    // ── Notification dropdown ────────────────────────────────────────────────
+    const notifBtn = document.getElementById('notificationDropdown');
+    notifBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       this.classList.toggle('active');
-      document.getElementById('notificationDropdown').classList.remove('active');
+      const menu = this.nextElementSibling;
+      if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
     });
-    
-    document.getElementById('notificationDropdown').addEventListener('click', function(e) {
-      e.stopPropagation();
-      this.classList.toggle('active');
-      document.getElementById('userDropdown').classList.remove('active');
-    });
-
     document.addEventListener('click', function(e) {
-      const userDropdown = document.getElementById('userDropdown');
-      const notifDropdown = document.getElementById('notificationDropdown');
-      const mobileNav = document.getElementById('mobileNav');
-      const hamburgerBtn = document.getElementById('hamburgerBtn');
-
-      // Close dropdowns if clicking outside
-      if (userDropdown && !userDropdown.contains(e.target)) userDropdown.classList.remove('active');
-      if (notifDropdown && !notifDropdown.contains(e.target)) notifDropdown.classList.remove('active');
-      if (mobileNav && hamburgerBtn && !mobileNav.contains(e.target) && !hamburgerBtn.contains(e.target)) {
-        mobileNav.classList.remove('open');
+      // Handle Notification Dropdown close
+      const notifBtn = document.getElementById('notificationDropdown');
+      if (notifBtn && !notifBtn.contains(e.target)) {
+        notifBtn.classList.remove('active');
+        const menu = notifBtn.nextElementSibling;
+        if (menu && !menu.contains(e.target)) menu.style.display = 'none';
       }
 
-      // Handle Hamburger Toggle
-      if (hamburgerBtn && hamburgerBtn.contains(e.target)) {
+      // Handle Mobile Sidebar close when clicking outside
+      const sidebar = document.getElementById('managerSidebar');
+      const toggleBtn = document.getElementById('mobileSidebarToggle');
+      if (sidebar && toggleBtn && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+        sidebar.classList.remove('open');
+      }
+
+      // Handle Mobile Sidebar open/close toggle
+      if (toggleBtn && toggleBtn.contains(e.target)) {
         e.preventDefault();
-        mobileNav.classList.toggle('open');
+        sidebar.classList.toggle('open');
       }
     });
 
-    // Confirm dialogs for dangerous actions
+    // ── data-confirm dialogs ─────────────────────────────────────────────────
     document.querySelectorAll('[data-confirm]').forEach(function(el) {
       el.addEventListener('click', function(e) {
         e.preventDefault();
-        
         Swal.fire({
           title: 'Are you sure?',
           text: this.dataset.confirm,
           icon: 'warning',
           showCancelButton: true,
-          confirmButtonColor: 'var(--color-brand-black)',
-          cancelButtonColor: 'var(--color-border)',
+          confirmButtonColor: '#7c3aed',
+          cancelButtonColor: '#e2e8f0',
           confirmButtonText: 'Yes, proceed',
-          cancelButtonText: 'Cancel',
-          customClass: {
-            popup: 'swal-custom-popup',
-            title: 'swal-custom-title',
-            htmlContainer: 'swal-custom-text',
-            confirmButton: 'btn btn-primary swal-custom-btn',
-            cancelButton: 'btn btn-outline swal-custom-btn'
-          },
+          cancelButtonText: '<span style="color:#475569">Cancel</span>',
+          customClass: { popup: 'swal-custom-popup', confirmButton: 'btn', cancelButton: 'btn' },
           buttonsStyling: false
-        }).then((result) => {
+        }).then(result => {
           if (result.isConfirmed) {
             const form = el.closest('form');
             if (form) {
-              // If the button itself has a name/value, we need to append it as a hidden input
-              // so it's included in the form submission.
               if (el.name && el.value) {
-                const hidden = document.createElement('input');
-                hidden.type = 'hidden';
-                hidden.name = el.name;
-                hidden.value = el.value;
-                form.appendChild(hidden);
+                const h = document.createElement('input');
+                h.type = 'hidden'; h.name = el.name; h.value = el.value;
+                form.appendChild(h);
               }
               form.submit();
             } else if (el.tagName.toLowerCase() === 'a') {
@@ -394,28 +279,215 @@
       });
     });
 
-    function markNotificationsRead(e) {
-      if (e) e.stopPropagation();
-      document.querySelectorAll('.notification-dot').forEach(el => el.style.display = 'none');
-      const count = '{{ notifications|length if notifications else 0 }}';
-      const userId = '{{ g.user.id if g.user else "" }}';
-      if (userId) {
-        localStorage.setItem('notifications_count_' + userId, count);
+    // ── Global Live Quick Search ─────────────────────────────────────────────
+    let cachedManagerInterns = null;
+    const searchInput = document.getElementById('globalQuickSearchInput');
+    const searchDropdown = document.getElementById('quickSearchDropdown');
+    const searchResultsBody = document.getElementById('quickSearchResultsBody');
+    const searchCount = document.getElementById('quickSearchCount');
+    const searchSpinner = document.getElementById('quickSearchSpinner');
+
+    async function loadManagerInterns() {
+      if (cachedManagerInterns) return;
+      if (searchSpinner) searchSpinner.style.display = 'inline-block';
+      try {
+        const resp = await fetch("{{ url_for('manager.quick_search_api') }}");
+        const data = await resp.json();
+        if (data.status === 'success') {
+          cachedManagerInterns = data.interns || [];
+        } else {
+          cachedManagerInterns = [];
+        }
+      } catch(err) {
+        console.error("Quick search fetch failed:", err);
+        cachedManagerInterns = [];
+      } finally {
+        if (searchSpinner) searchSpinner.style.display = 'none';
       }
     }
 
-    document.addEventListener("DOMContentLoaded", function() {
-      const count = '{{ notifications|length if notifications else 0 }}';
-      const userId = '{{ g.user.id if g.user else "" }}';
-      if (userId && parseInt(count) > 0) {
-        const savedCount = localStorage.getItem('notifications_count_' + userId);
-        if (savedCount === count) {
-          document.querySelectorAll('.notification-dot').forEach(el => el.style.display = 'none');
-        }
+    function renderQuickSearch(query) {
+      if (!cachedManagerInterns) return;
+      const q = (query || "").trim().toLowerCase();
+      const matched = cachedManagerInterns.filter(i => {
+        if (!q) return true;
+        return (i.name && i.name.toLowerCase().includes(q)) ||
+               (i.email && i.email.toLowerCase().includes(q)) ||
+               (i.id && i.id.toLowerCase().includes(q));
+      });
+
+      if (searchCount) searchCount.textContent = `${matched.length} found`;
+
+      if (matched.length === 0) {
+        searchResultsBody.innerHTML = `<div style="padding: 2.5rem 1rem; text-align: center; color: #94a3b8; font-size: 0.88rem;"><i class="fa-solid fa-user-slash" style="font-size: 1.75rem; display: block; margin-bottom: 0.6rem; color: #cbd5e1;"></i>No interns matching "${query}"</div>`;
+        return;
       }
-    });
+
+      let html = '';
+      matched.forEach(i => {
+        const profileUrl = "{{ url_for('manager.student_detail', intern_id='__ID__') }}".replace('__ID__', i.id);
+        const attUrl = "{{ url_for('manager.attendance') }}?search=" + encodeURIComponent(i.name);
+        const taskUrl = "{{ url_for('manager.tasks') }}?search=" + encodeURIComponent(i.name);
+        const perfUrl = "{{ url_for('manager.performance') }}";
+
+        html += `
+          <div class="qs-item">
+            <div class="qs-user-row">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div class="qs-avatar">${i.avatar || 'UN'}</div>
+                <div>
+                  <div class="qs-name">${i.name}</div>
+                  <div class="qs-email">${i.email || 'No Email'}</div>
+                </div>
+              </div>
+              <span class="qs-id-badge" title="RGT ID">RGT ID: ${i.rgt_id || (i.id ? i.id.substring(0, 6) + '...' : 'Not Set')}</span>
+            </div>
+            <div class="qs-actions-row">
+              <a href="${profileUrl}" class="qs-action-btn"><i class="fa-solid fa-id-card"></i> Profile</a>
+              <a href="${attUrl}" class="qs-action-btn"><i class="fa-solid fa-calendar-check"></i> Attendance</a>
+              <a href="${taskUrl}" class="qs-action-btn"><i class="fa-solid fa-list-check"></i> Tasks</a>
+              <a href="${perfUrl}" class="qs-action-btn"><i class="fa-solid fa-star"></i> Evaluate</a>
+            </div>
+          </div>
+        `;
+      });
+      searchResultsBody.innerHTML = html;
+    }
+
+    if (searchInput && searchDropdown) {
+      searchInput.addEventListener('focus', async () => {
+        await loadManagerInterns();
+        renderQuickSearch(searchInput.value);
+        searchDropdown.style.display = 'block';
+      });
+
+      searchInput.addEventListener('input', () => {
+        renderQuickSearch(searchInput.value);
+        searchDropdown.style.display = 'block';
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !searchDropdown.contains(e.target)) {
+          searchDropdown.style.display = 'none';
+        }
+      });
+    }
+
+    const sidebar = document.getElementById('managerSidebar');
+    const toggleBtn = document.getElementById('mobileSidebarToggle');
+    if(toggleBtn && sidebar) {
+      toggleBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        sidebar.classList.toggle('open');
+      });
+      document.addEventListener('click', function(e) {
+        if(window.innerWidth <= 1024 && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+          sidebar.classList.remove('open');
+        }
+      });
+    }
+
+    function openAnnouncementsModal() {
+      const modal = document.getElementById('announcementsModal');
+      if (modal) {
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
+    }
+    function closeAnnouncementsModal() {
+      const modal = document.getElementById('announcementsModal');
+      if (modal) {
+        modal.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+    }
   </script>
   {% endblock %}
-  <script src="{{ url_for('static', filename='js/network-bg.js') }}" defer></script>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       RGTVERTEX ANNOUNCEMENTS MODAL (Global Self-Contained Styles)
+       ════════════════════════════════════════════════════════════════════════ -->
+  <style>
+    #announcementsModal.modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(8px);
+      z-index: 99999; align-items: center; justify-content: center;
+      padding: 1.5rem;
+    }
+    #announcementsModal.modal-overlay.open { display: flex; animation: fadeInAnnounce 0.2s ease; }
+    @keyframes fadeInAnnounce { from { opacity: 0; } to { opacity: 1; } }
+
+    #announcementsModal .modal-panel {
+      background: #fff; border-radius: 1.5rem; width: 100%; max-width: 650px;
+      max-height: 85vh; display: flex; flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); border: 1px solid #e2e8f0;
+      overflow: hidden; animation: scaleUpAnnounce 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      text-align: left;
+    }
+    @keyframes scaleUpAnnounce { from { transform: scale(0.95) translateY(15px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+    #announcementsModal .modal-top {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.35rem 1.75rem; border-bottom: 1px solid #f1f5f9;
+      background: linear-gradient(to right, #faf5ff, #fff); flex-shrink: 0;
+    }
+    #announcementsModal .modal-top h3 {
+      font-size: 1.12rem; font-weight: 800; color: #0f172a; margin: 0;
+      display: flex; align-items: center; gap: 0.6rem; font-family: 'Inter', sans-serif;
+    }
+    #announcementsModal .modal-close-btn {
+      background: #f1f5f9; border: none; font-size: 1.4rem; cursor: pointer; color: #64748b;
+      border-radius: 0.6rem; width: 36px; height: 36px; display: flex; align-items: center;
+      justify-content: center; transition: all 0.15s; line-height: 1; flex-shrink: 0; padding: 0;
+    }
+    #announcementsModal .modal-close-btn:hover { color: #0f172a; background: #e2e8f0; transform: scale(1.05); }
+
+    #announcementsModal .modal-body {
+      padding: 1.5rem 1.75rem; overflow-y: auto; flex: 1;
+    }
+    #announcementsModal .modal-footer {
+      padding: 1rem 1.75rem; border-top: 1px solid #f1f5f9; background: #f8fafc;
+      display: flex; justify-content: flex-end; flex-shrink: 0;
+    }
+    #announcementsModal .btn-announce-close {
+      background: linear-gradient(135deg, #0f172a, #1e293b); border: none; border-radius: 0.75rem;
+      padding: 0.65rem 1.5rem; font-size: 0.88rem; font-weight: 700; color: #fff; cursor: pointer;
+      font-family: inherit; transition: all 0.2s; box-shadow: 0 4px 12px rgba(15,23,42,0.15);
+    }
+    #announcementsModal .btn-announce-close:hover { background: linear-gradient(135deg, #7c3aed, #6d28d9); box-shadow: 0 6px 15px rgba(124,58,237,0.3); transform: translateY(-1px); }
+  </style>
+  <div id="announcementsModal" class="modal-overlay" onclick="if(event.target===this)closeAnnouncementsModal()">
+    <div class="modal-panel">
+      <div class="modal-top">
+        <h3><i class="fa-solid fa-bullhorn" style="color:#7c3aed;"></i> RGTvertex Company Announcements & Updates</h3>
+        <button class="modal-close-btn" onclick="closeAnnouncementsModal()" aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        
+        {% if not announcements %}
+          <div style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
+            <i class="fa-solid fa-bullhorn" style="font-size: 2.5rem; display: block; margin-bottom: 0.75rem; color: #cbd5e1;"></i>
+            <p style="margin: 0; font-weight: 600;">No company announcements published right now.</p>
+          </div>
+        {% else %}
+          {% for ann in announcements %}
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid {{ ann.color or '#7c3aed' }}; border-radius: 0.85rem; padding: 1.25rem; margin-bottom: 1.25rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="font-size: 0.72rem; font-weight: 800; color: {{ ann.color or '#7c3aed' }}; text-transform: uppercase; letter-spacing: 0.05em;"><i class="fa-solid fa-tag"></i> {{ ann.category or 'Notice' }}</span>
+                <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">{{ ann.status or 'Active Now' }}</span>
+              </div>
+              <h4 style="font-size: 0.98rem; font-weight: 800; color: #0f172a; margin: 0 0 0.4rem;">{{ ann.title }}</h4>
+              <p style="font-size: 0.86rem; color: #475569; margin: 0; line-height: 1.5; white-space: pre-line;">{{ ann.content }}</p>
+            </div>
+          {% endfor %}
+        {% endif %}
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-announce-close" onclick="closeAnnouncementsModal()">Got It, Close Notice</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
