@@ -221,15 +221,27 @@
       const menu = this.nextElementSibling;
       if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
     });
-    document.addEventListener('click', function() {
-      notifBtn.classList.remove('active');
-      const menu = notifBtn.nextElementSibling;
-      if (menu) menu.style.display = 'none';
-    });
+    document.addEventListener('click', function(e) {
+      // Handle Notification Dropdown close
+      const notifBtn = document.getElementById('notificationDropdown');
+      if (notifBtn && !notifBtn.contains(e.target)) {
+        notifBtn.classList.remove('active');
+        const menu = notifBtn.nextElementSibling;
+        if (menu && !menu.contains(e.target)) menu.style.display = 'none';
+      }
 
-    // ── Mobile Sidebar ───────────────────────────────────────────────────────
-    document.getElementById('mobileSidebarToggle').addEventListener('click', function() {
-      document.getElementById('managerSidebar').classList.toggle('open');
+      // Handle Mobile Sidebar close when clicking outside
+      const sidebar = document.getElementById('managerSidebar');
+      const toggleBtn = document.getElementById('mobileSidebarToggle');
+      if (sidebar && toggleBtn && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+        sidebar.classList.remove('open');
+      }
+
+      // Handle Mobile Sidebar open/close toggle
+      if (toggleBtn && toggleBtn.contains(e.target)) {
+        e.preventDefault();
+        sidebar.classList.toggle('open');
+      }
     });
 
     // ── data-confirm dialogs ─────────────────────────────────────────────────
