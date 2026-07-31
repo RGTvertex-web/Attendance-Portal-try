@@ -1004,9 +1004,13 @@ def settings():
     import json
     try:
         depts = json.loads(current_settings.get("departments", "[]"))
+        if not depts:
+            from config import DEPARTMENTS
+            depts = DEPARTMENTS
         depts_str = ", ".join(depts)
     except:
-        depts_str = ""
+        from config import DEPARTMENTS
+        depts_str = ", ".join(DEPARTMENTS)
         
     return render_template("admin/settings.html", settings=current_settings, depts_str=depts_str)
 
