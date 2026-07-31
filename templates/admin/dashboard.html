@@ -329,17 +329,24 @@
       document.getElementById('userDropdown').classList.remove('active');
     });
 
-    document.addEventListener('click', function() {
-      document.getElementById('userDropdown').classList.remove('active');
-      document.getElementById('notificationDropdown').classList.remove('active');
-    });
+    document.addEventListener('click', function(e) {
+      const userDropdown = document.getElementById('userDropdown');
+      const notifDropdown = document.getElementById('notificationDropdown');
+      const mobileNav = document.getElementById('mobileNav');
+      const hamburgerBtn = document.getElementById('hamburgerBtn');
 
+      // Close dropdowns if clicking outside
+      if (userDropdown && !userDropdown.contains(e.target)) userDropdown.classList.remove('active');
+      if (notifDropdown && !notifDropdown.contains(e.target)) notifDropdown.classList.remove('active');
+      if (mobileNav && hamburgerBtn && !mobileNav.contains(e.target) && !hamburgerBtn.contains(e.target)) {
+        mobileNav.classList.remove('open');
+      }
 
-    // Hamburger toggle
-    document.getElementById('hamburgerBtn').addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      document.getElementById('mobileNav').classList.toggle('open');
+      // Handle Hamburger Toggle
+      if (hamburgerBtn && hamburgerBtn.contains(e.target)) {
+        e.preventDefault();
+        mobileNav.classList.toggle('open');
+      }
     });
 
     // Confirm dialogs for dangerous actions
