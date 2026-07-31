@@ -825,6 +825,30 @@ def audit_logs():
     end = start + per_page
     paginated_logs = logs[start:end]
     
+    # Resolve UUIDs to Names
+    try:
+        import re
+        from services.supabase_service import get_all_profiles
+        all_profiles = get_all_profiles()
+        profile_map = {u["id"]: u["name"] for u in all_profiles if "id" in u and "name" in u}
+        
+        uuid_pattern = re.compile(r'\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b', re.IGNORECASE)
+        
+        for log in paginated_logs:
+            actor_id = log.get("actor_id", "")
+            log["actor_name"] = profile_map.get(actor_id, actor_id)
+            
+            details = log.get("details", "")
+            if details:
+                def replace_uuid(match):
+                    uid = match.group(0).lower()
+                    return profile_map.get(uid, match.group(0))
+                log["details"] = uuid_pattern.sub(replace_uuid, details)
+    except Exception as e:
+        logger.error(f"Failed to resolve names for audit logs: {e}")
+        for log in paginated_logs:
+            log["actor_name"] = log.get("actor_id", "")
+    
     return render_template("admin/audit.html", logs=paginated_logs, search=search_query, page=page, total_pages=total_pages)
 
 
