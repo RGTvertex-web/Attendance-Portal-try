@@ -62,13 +62,9 @@ def _send_email_sync(to_email: str, subject: str, content: str, html_content: st
         return False
 
 def _send_email(to_email: str, subject: str, content: str, html_content: str = None, from_name: str = None):
-    thread = threading.Thread(
-        target=_send_email_sync,
-        args=(to_email, subject, content, html_content, from_name)
-    )
-    thread.daemon = True
-    thread.start()
-    return True
+    # In serverless environments like Vercel, background threads are paused immediately
+    # when the HTTP response is sent. We must send synchronously to guarantee delivery.
+    return _send_email_sync(to_email, subject, content, html_content, from_name)
 
 def _render_branded_email(title: str, body_html: str) -> str:
     # Use CID embedding for inline logo
