@@ -21,10 +21,10 @@
 </div>
 
 {# ── Main grid ─────────────────────────────────────────────────────────────── #}
-<div class="row g-4 align-items-start">
+<div style="display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap;">
 
   {# ── LEFT COLUMN: Avatar + Account Info ─────────────────────────────────── #}
-  <div class="col-12 col-lg-4" style="display: flex; flex-direction: column; gap: 1.25rem;">
+  <div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 1.25rem; min-width: 0;">
 
     {# Avatar card #}
     <div class="card mb-0 text-center" style="padding: 2rem 1rem;">
@@ -149,7 +149,7 @@
   </div>{# end left column #}
 
   {# ── RIGHT COLUMN: Settings form ─────────────────────────────────────────── #}
-  <div class="col-12 col-lg-8 card mb-0">
+  <div class="card mb-0" style="flex: 2 1 600px; min-width: 0;">
     <div class="card-header"><h3 class="card-title">Profile Settings</h3></div>
     <div class="card-body">
       <form method="POST" action="{{ url_for('auth.profile') }}" novalidate>
