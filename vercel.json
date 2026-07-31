@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "app.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "app.py"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/internal/cron/daily-attendance",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/internal/cron/daily-reminders",
+      "schedule": "0 17 * * 1-5"
+    },
+    {
+      "path": "/internal/cron/missing-escalations",
+      "schedule": "30 18 * * 0-4"
+    },
+    {
+      "path": "/internal/cron/monthly-reports",
+      "schedule": "0 8 1 * *"
+    },
+    {
+      "path": "/internal/cron/completion-reminders",
+      "schedule": "0 9 * * *"
+    }
+  ]
+}

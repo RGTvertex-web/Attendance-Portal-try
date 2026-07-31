@@ -1,0 +1,33 @@
+Traceback (most recent call last):
+  File "C:\Users\Dhairyakant\Desktop\RGTVertex\intern_portal\routes\intern.py", line 395, in download_performance_report_pdf
+    pdf_bytes = generate_internship_report_pdf(g.user, host_url=request.host_url)
+  File "C:\Users\Dhairyakant\Desktop\RGTVertex\intern_portal\services\pdf_service.py", line 154, in generate_internship_report_pdf
+    return _generate_internship_report_pdf_inner(intern_profile, host_url)
+  File "C:\Users\Dhairyakant\Desktop\RGTVertex\intern_portal\services\pdf_service.py", line 574, in _generate_internship_report_pdf_inner
+    doc.build(story)
+    ~~~~~~~~~^^^^^^^
+  File "C:\Users\Dhairyakant\AppData\Roaming\Python\Python314\site-packages\reportlab\platypus\doctemplate.py", line 1322, in build
+    BaseDocTemplate.build(self,flowables, canvasmaker=canvasmaker)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Dhairyakant\AppData\Roaming\Python\Python314\site-packages\reportlab\platypus\doctemplate.py", line 1083, in build
+    self.handle_flowable(flowables)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\Dhairyakant\AppData\Roaming\Python\Python314\site-packages\reportlab\platypus\doctemplate.py", line 932, in handle_flowable
+    if frame.add(f, canv, trySplit=self.allowSplitting):
+       ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Dhairyakant\AppData\Roaming\Python\Python314\site-packages\reportlab\platypus\frames.py", line 158, in _add
+    w, h = flowable.wrap(aW, h)
+           ~~~~~~~~~~~~~^^^^^^^
+  File "C:\Users\Dhairyakant\AppData\Roaming\Python\Python314\site-packages\reportlab\platypus\tables.py", line 1364, in wrap
+    self._calc(availWidth, availHeight)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Dhairyakant\AppData\Roaming\Python\Python314\site-packages\reportlab\platypus\tables.py", line 750, in _calc
+    self._calc_height(availHeight,availWidth,W=W)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Dhairyakant\AppData\Roaming\Python\Python314\site-packages\reportlab\platypus\tables.py", line 671, in _calc_height
+    dW,t = self._listCellGeom(v,w or self._listValueWidth(v),s)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Dhairyakant\AppData\Roaming\Python\Python314\site-packages\reportlab\platypus\tables.py", line 495, in _listCellGeom
+    raise ValueError(f'{self.identity()}: flowable given negative availWidth={aW} width={w} - leftPadding={s.leftPadding} - rightPadding={s.rightPadding}')
+ValueError: <Table@0x195B015A900 1 rows x 3 cols(tallest row None)> with cell(0,0) containing
+"<Table@0x195B015A510 6 rows x 2 cols(tallest row 19.0)> with cell(0,0) containing\n'<Paragraph at 0x195b04bcc50>Attendance Summary'": flowable given negative availWidth=-8 width=4 - leftPadding=6 - rightPadding=6
