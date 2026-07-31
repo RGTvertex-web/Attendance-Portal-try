@@ -460,8 +460,5 @@ def download_performance_report_pdf():
             "Failed to generate PDF report for intern %s: %s",
             g.user.get("id"), e, exc_info=True
         )
-        import traceback
-        with open("pdf_error.log", "w") as f:
-            f.write(traceback.format_exc())
         flash(f"Could not generate PDF report. Error: {str(e)}", "error")
         return redirect(url_for("intern.performance"))
