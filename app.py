@@ -273,11 +273,30 @@ def create_app():
             except Exception:
                 return []
                 
+        def get_today_report():
+            try:
+                if getattr(g, "user", None) and g.user_role == "intern":
+                    submissions = ss.get_submissions_for_student(g.user["id"])
+                    from datetime import datetime, timezone
+                    import json
+                    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                    virtual_task_id = f"REPORT-{today_str}"
+                    for sub in submissions:
+                        try:
+                            sub["report_data"] = json.loads(sub.get("notes", "{}"))
+                        except:
+                            sub["report_data"] = {"given": "Unknown", "done": sub.get("notes", ""), "remaining": "Unknown"}
+                    return next((s for s in submissions if str(s.get("task_id")) == virtual_task_id), None)
+            except Exception as context_processor_err:
+                app.logger.error("Failed to get today_report in context processor: %s", context_processor_err)
+            return None
+
         from werkzeug.local import LocalProxy
         return dict(
             DEPARTMENTS=LocalProxy(get_departments), 
             notifications=LocalProxy(get_notifications), 
-            announcements=LocalProxy(get_announcements)
+            announcements=LocalProxy(get_announcements),
+            today_report=LocalProxy(get_today_report)
         )
 
     @app.errorhandler(404)
