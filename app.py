@@ -62,13 +62,6 @@ def create_app():
         if request.endpoint and request.endpoint.startswith('static'):
             return
 
-    @app.after_request
-    def log_request_timing(response):
-        if hasattr(g, 'start_time') and not (request.endpoint and request.endpoint.startswith('static')):
-            duration = time.time() - g.start_time
-            app.logger.info("Route %s took %.2fs", request.path, duration)
-        return response
-
         user_id = session.get("user_id")
         session_token = session.get("session_token")
         if user_id:
@@ -88,6 +81,13 @@ def create_app():
             except Exception as e:
                 app.logger.warning(f"Session user invalid: {e}")
                 session.clear()
+
+    @app.after_request
+    def log_request_timing(response):
+        if hasattr(g, 'start_time') and not (request.endpoint and request.endpoint.startswith('static')):
+            duration = time.time() - g.start_time
+            app.logger.info("Route %s took %.2fs", request.path, duration)
+        return response
 
     # ── APScheduler ────────────────────────────────────────────────────────────
     # Do not start background threads on Vercel serverless runtime
