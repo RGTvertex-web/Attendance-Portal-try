@@ -1,322 +1,120 @@
 {% extends "base_dashboard.html" %}
 
-{% block page_title %}My Performance{% endblock %}
+{% block page_title %}My Reports{% endblock %}
 
 {% block content %}
-<style>
-  /* Brand Palette: #111111 ink | #4b4b4b soft | #737373 faint | #f5f5f5 soft-bg | #fafafa bg2 | #e8e8e8 border */
-
-  .perf-hero { margin-bottom: 2.5rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; }
-  .perf-hero-text .tag { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; font-weight: 600; color: #737373; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.5rem; }
-  .perf-hero-text h1 { font-size: 2rem; font-weight: 800; color: #111111; margin: 0 0 0.4rem; line-height: 1.2; }
-  .perf-hero-text p { color: #737373; font-size: 0.9rem; margin: 0; }
-  .perf-hero-text p { color: #737373; font-size: 0.9rem; margin: 0; }
-
-  .perf-stat-grid { margin-bottom: 2rem; }
-  .perf-stat-card { background: #ffffff; border: 1px solid #e8e8e8; border-radius: 1rem; padding: 1.25rem 1.5rem; display: flex; align-items: center; gap: 1rem; height: 100%; }
-  .perf-stat-icon { width: 44px; height: 44px; border-radius: 0.75rem; background: #f5f5f5; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #4b4b4b; flex-shrink: 0; }
-  .perf-stat-value { font-size: 1.5rem; font-weight: 800; color: #111111; line-height: 1; }
-  .perf-stat-label { font-size: 0.75rem; color: #737373; font-weight: 600; margin-top: 0.2rem; text-transform: uppercase; letter-spacing: 0.04em; }
-
-  .report-card { background: #ffffff; border: 1px solid #e8e8e8; border-radius: 1.25rem; overflow: hidden; margin-bottom: 1.5rem; }
-  .report-card-header { padding: 1.25rem 1.5rem; background: #fafafa; border-bottom: 1px solid #e8e8e8; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; }
-  .report-period { font-size: 0.95rem; font-weight: 700; color: #111111; display: flex; align-items: center; gap: 0.5rem; }
-  .report-period i { color: #737373; font-size: 0.85rem; }
-  .grade-pill { display: inline-flex; align-items: center; gap: 0.4rem; background: #111111; color: #ffffff; font-size: 0.78rem; font-weight: 700; padding: 0.35rem 0.85rem; border-radius: 2rem; letter-spacing: 0.03em; }
-
-  .scorecard { padding: 1.5rem; }
-  .scorecard-metrics { margin-bottom: 1.25rem; }
-  .metric-box { background: #f5f5f5; border: 1px solid #e8e8e8; border-radius: 0.875rem; padding: 1rem; text-align: center; height: 100%; }
-  .metric-label { font-size: 0.7rem; font-weight: 700; color: #737373; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
-  .metric-value { font-size: 1.75rem; font-weight: 800; color: #111111; line-height: 1; }
-  .metric-value sup { font-size: 0.8rem; font-weight: 600; color: #737373; }
-
-  .scorecard-bottom { margin-top: 1rem; }
-  .score-box { background: #f5f5f5; border: 1px solid #e8e8e8; border-radius: 0.875rem; padding: 1rem; text-align: center; height: 100%; }
-  .score-big { font-size: 2.25rem; font-weight: 900; color: #111111; line-height: 1; }
-  .score-big span { font-size: 1rem; font-weight: 500; color: #737373; }
-  .standing-pill { display: inline-block; font-size: 0.7rem; font-weight: 800; padding: 0.25rem 0.75rem; border-radius: 2rem; margin-top: 0.5rem; letter-spacing: 0.05em; }
-  .standing-pass { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
-  .standing-fail { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
-  .standing-other { background: #f5f5f5; color: #4b4b4b; border: 1px solid #e8e8e8; }
-  .tasks-box { background: #111111; border-radius: 0.875rem; padding: 1rem; text-align: center; }
-  .tasks-num { font-size: 2rem; font-weight: 900; color: #ffffff; line-height: 1; }
-  .tasks-label { font-size: 0.7rem; font-weight: 700; color: #737373; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.35rem; }
-  .tasks-pct { display: inline-block; background: rgba(255,255,255,0.12); color: #e8e8e8; font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 1rem; margin-top: 0.4rem; }
-
-  .feedback-section { padding: 0 1.5rem 1.5rem; display: grid; gap: 0.75rem; }
-  .feedback-item { border-radius: 0.75rem; border: 1px solid #e8e8e8; overflow: hidden; }
-  .feedback-header { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; background: #fafafa; font-size: 0.78rem; font-weight: 700; color: #4b4b4b; border-bottom: 1px solid #e8e8e8; }
-  .feedback-header i { color: #737373; }
-  .feedback-body { padding: 0.75rem 1rem; font-size: 0.85rem; color: #4b4b4b; line-height: 1.6; }
-
-  .report-footer { padding: 1rem 1.5rem; background: #fafafa; border-top: 1px solid #e8e8e8; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
-  .footer-meta { font-size: 0.78rem; color: #737373; display: flex; align-items: center; gap: 0.4rem; }
-  .footer-actions { display: flex; gap: 0.5rem; align-items: center; }
-  .btn-export { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.9rem; border: 1px solid #e8e8e8; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 600; color: #4b4b4b; background: #ffffff; text-decoration: none; }
-  .btn-export:hover { background: #f5f5f5; color: #111111; }
-  .btn-ack { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.9rem; border: 1px solid #111111; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 600; color: #ffffff; background: #111111; cursor: pointer; }
-  .ack-badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; font-weight: 700; color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.3rem 0.75rem; border-radius: 2rem; }
-
-  .empty-state { text-align: center; padding: 5rem 2rem; }
-  .empty-icon { width: 72px; height: 72px; background: #f5f5f5; border-radius: 1rem; display: inline-flex; align-items: center; justify-content: center; font-size: 2rem; color: #737373; margin-bottom: 1.5rem; }
-  .empty-state h3 { font-size: 1.25rem; font-weight: 700; color: #111111; margin-bottom: 0.5rem; }
-  .empty-state p { color: #737373; font-size: 0.9rem; max-width: 380px; margin: 0 auto; }
-
-  @media (max-width: 640px) {
-  }
-</style>
-
-<!-- ── Header ── -->
-<div class="perf-hero">
-  <div class="perf-hero-text">
-    <div class="tag">
-      <i class="fa-solid fa-circle" style="font-size:0.45rem;"></i> Intern Portal
-    </div>
-    <h1>My Performance</h1>
-    <p>Review your monthly evaluations, scores, and official certificates.</p>
-  </div>
-  <a href="{{ url_for('intern.download_performance_report_pdf') }}"
-     style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.6rem 1.25rem;background:#111111;color:#ffffff;border-radius:0.75rem;font-weight:700;font-size:0.85rem;text-decoration:none;border:1px solid #111111;">
-    <i class="fa-solid fa-file-pdf"></i> Download Official Report (PDF)
-  </a>
-</div>
-
-{% if carousel_slides %}
-
-<!-- ── KPI Strip ── -->
-<div class="row g-3 perf-stat-grid">
-  <div class="col-12 col-md-4">
-    <div class="perf-stat-card">
-      <div class="perf-stat-icon"><i class="fa-solid fa-file-lines"></i></div>
-      <div>
-        <div class="perf-stat-value">{{ reports|length }}</div>
-        <div class="perf-stat-label">Total Reports</div>
-      </div>
+<div style="max-width: 800px; margin: 2rem auto;">
+  
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+    <div>
+      <h1 class="hero-title" style="font-size: 2rem; margin-bottom: 0.5rem;">My Reports</h1>
+      <p class="text-muted">Submit your daily progress reports.</p>
     </div>
   </div>
-  <div class="col-12 col-md-4">
-    <div class="perf-stat-card">
-      <div class="perf-stat-icon"><i class="fa-solid fa-star"></i></div>
-      <div>
-        <div class="perf-stat-value">{% if reports %}{{ reports[0].summary.obtained_score }}{% else %}-{% endif %}<span style="font-size:0.9rem;color:#94a3b8;font-weight:500;">/10</span></div>
-        <div class="perf-stat-label">Latest Score</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-12 col-md-4">
-    <div class="perf-stat-card">
-      <div class="perf-stat-icon"><i class="fa-solid fa-award"></i></div>
-      <div>
-        <div class="perf-stat-value">{% if reports %}{{ reports[0].summary.milestone_standing }}{% else %}N/A{% endif %}</div>
-        <div class="perf-stat-label">Milestone Standing</div>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- ── Report Carousel ── -->
-<div class="report-carousel-container" style="position: relative; max-width: 1000px; margin: 0 auto;">
-  <!-- Carousel Navigation Controls -->
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 12px 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-    <button id="prevBtn" class="carousel-btn" style="background: #1e293b; color: white; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: opacity 0.2s;">
-      <i class="fa-solid fa-chevron-left" style="margin-right: 5px;"></i> Previous
-    </button>
-    <div id="carouselIndicator" style="font-weight: 700; color: #334155; font-size: 1.1rem;">
-      Month 1
+  <div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: 1.5rem; font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; gap: 0.75rem;">
+      <i class="fa-solid fa-pen-to-square text-primary"></i> Submit a Report
     </div>
-    <button id="nextBtn" class="carousel-btn" style="background: #1e293b; color: white; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: opacity 0.2s;">
-      Next <i class="fa-solid fa-chevron-right" style="margin-left: 5px;"></i>
-    </button>
-  </div>
-
-  <div class="carousel-slides">
-    {% for slide in carousel_slides %}
-      <div class="report-slide" id="slide-{{ loop.index0 }}" style="display: {% if loop.index0 == 0 %}block{% else %}none{% endif %};">
+    <div class="card-body" style="padding: 1.5rem;">
+      <form method="POST" action="{{ url_for('intern.submit_report') }}" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="source_page" value="reports">
         
-        <div style="text-align: center; margin-bottom: 20px;">
-          <h2 style="margin: 0; color: #0f172a; font-size: 1.4rem;">Month {{ slide.cycle.month }} Performance Report</h2>
-          <div style="color: #64748b; font-size: 0.95rem; margin-top: 4px;">Cycle: {{ slide.cycle.start }} to {{ slide.cycle.end }}</div>
+        <div class="form-group mb-4">
+          <label class="form-label" for="task_given" style="font-weight: 600;">What task was given today?</label>
+          <textarea id="task_given" name="task_given" class="form-control" rows="2" placeholder="Describe the task given in the meeting..." required style="resize: vertical;">{% if today_report %}{{ today_report.report_data.given }}{% endif %}</textarea>
         </div>
         
-        {% if slide.report %}
-          {% set report = slide.report %}
-          <!-- Report Content -->
-          <div class="report-card">
-            <!-- Card Header -->
-            <div class="report-card-header">
-              <div class="report-period">
-                <i class="fa-regular fa-calendar"></i>
-                {{ report.period_start }} &#8594; {{ report.period_end }}
-              </div>
-              <div class="grade-pill">
-                <i class="fa-solid fa-trophy" style="font-size:0.7rem;"></i>
-                {{ report.grade_band }}
-              </div>
-            </div>
+        <div class="form-group mb-4">
+          <label class="form-label" for="task_done" style="font-weight: 600;">How much is done?</label>
+          <textarea id="task_done" name="task_done" class="form-control" rows="3" placeholder="Describe what you completed..." required style="resize: vertical;">{% if today_report %}{{ today_report.report_data.done }}{% endif %}</textarea>
+        </div>
+        
+        <div class="form-group mb-4">
+          <label class="form-label" for="task_remaining" style="font-weight: 600;">How much is remaining?</label>
+          <textarea id="task_remaining" name="task_remaining" class="form-control" rows="2" placeholder="What is left for tomorrow?" required style="resize: vertical;">{% if today_report %}{{ today_report.report_data.remaining }}{% endif %}</textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1.5rem;">
+          {% if today_report %}Update Report{% else %}Submit Report{% endif %} <i class="fa-solid fa-arrow-right" style="margin-left: 0.5rem;"></i>
+        </button>
+      </form>
+    </div>
+  </div>
 
-            <!-- Scorecard -->
-            <div class="scorecard">
-              <div class="row g-3 scorecard-metrics">
-                <div class="col-12 col-md-4">
-                  <div class="metric-box">
-                    <div class="metric-label">Initiative</div>
-                    <div class="metric-value">{{ report.summary.initiative_grade }}<sup>/10</sup></div>
-                  </div>
-                </div>
-                <div class="col-12 col-md-4">
-                  <div class="metric-box">
-                    <div class="metric-label">Task Completion</div>
-                    <div class="metric-value">{{ report.summary.task_completion }}<sup>/10</sup></div>
-                  </div>
-                </div>
-                <div class="col-12 col-md-4">
-                  <div class="metric-box">
-                    <div class="metric-label">Behavioral Index</div>
-                    <div class="metric-value">{{ report.summary.behavioral_index }}<sup>/10</sup></div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row g-3 scorecard-bottom">
-                <div class="col-12 col-md-6">
-                  <div class="tasks-box" style="display:flex; flex-direction:column; justify-content:center; height:100%;">
-                    <div class="tasks-label" style="text-transform: uppercase;">Rubric Score</div>
-                    <div class="tasks-num" style="margin-top: 5px;">{{ report.total_score }}<span style="font-size:1.1rem;color:#64748b;"> / 30</span></div>
-                  </div>
-                </div>
-                <div class="col-12 col-md-6">
-                  <div class="score-box">
-                    <div class="metric-label">Obtained Score</div>
-                    <div class="score-big">{{ report.summary.obtained_score }}<span>/10</span></div>
-                    {% if report.total_score >= 21 %}
-                    <div class="standing-pill standing-pass">Outstanding / Excellent</div>
-                    {% elif report.total_score >= 18 %}
-                    <div class="standing-pill standing-pass">Good</div>
-                    {% elif report.total_score >= 12 %}
-                    <div class="standing-pill standing-other">Satisfactory</div>
-                    {% else %}
-                    <div class="standing-pill standing-fail">Needs Improvement</div>
-                    {% endif %}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Feedback -->
-            <div class="feedback-section">
-              <div class="feedback-item">
-                <div class="feedback-header"><i class="fa-solid fa-circle-check"></i> Strengths</div>
-                <div class="feedback-body">{{ report.strengths or 'No specific strengths recorded.' }}</div>
-              </div>
-              <div class="feedback-item">
-                <div class="feedback-header"><i class="fa-solid fa-compass"></i> Areas for Improvement</div>
-                <div class="feedback-body">{{ report.areas_improvement or 'No specific areas recorded.' }}</div>
-              </div>
-              <div class="feedback-item">
-                <div class="feedback-header"><i class="fa-solid fa-comment-dots"></i> Manager Comments</div>
-                <div class="feedback-body">{{ report.overall_comments or 'No manager comments recorded.' }}</div>
-              </div>
-              {% if report.edit_reason %}
-              <div class="feedback-item" style="border-color:#fde68a;">
-                <div class="feedback-header" style="background:#fffbeb;border-color:#fde68a;">
-                  <i class="fa-solid fa-triangle-exclamation" style="color:#d97706;"></i> Amendment Note
-                </div>
-                <div class="feedback-body">{{ report.edit_reason }}</div>
-              </div>
+  <div class="card">
+    <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div style="font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; gap: 0.75rem;">
+        <i class="fa-solid fa-clock-rotate-left text-muted"></i> Past Reports
+      </div>
+      <form method="GET" action="{{ url_for('intern.reports') }}" style="display: flex; gap: 0.5rem; align-items: center;">
+        <div style="position: relative;">
+          <i class="fa-solid fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+          <input type="text" name="search" class="form-control" placeholder="Search reports..." value="{{ search }}" style="width: 250px; padding-left: 2.5rem; border-radius: 99px;" onblur="this.form.submit()">
+        </div>
+        <noscript><button type="submit" class="btn btn-secondary btn-sm">Search</button></noscript>
+      </form>
+    </div>
+    <div class="card-body" style="padding: 0; overflow-x: auto;">
+      <table class="table" style="width: 100%; border-collapse: collapse; min-width: 600px;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--color-border); background: #f8fafc;">
+            <th style="padding: 1rem 1.5rem; text-align: left; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); width: 120px;">Date</th>
+            <th style="padding: 1rem 1.5rem; text-align: left; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Summary</th>
+            <th style="padding: 1rem 1.5rem; text-align: left; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); width: 120px;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sub in submissions %}
+          <tr style="border-bottom: 1px solid var(--color-border); transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
+            <td style="padding: 1.5rem; font-size: 0.9rem; font-weight: 500; white-space: nowrap; vertical-align: top;">
+              <i class="fa-regular fa-calendar" style="color: var(--text-muted); margin-right: 0.5rem;"></i>{{ sub.submitted_at[:10] }}
+            </td>
+            <td style="padding: 1.5rem; font-size: 0.9rem; vertical-align: top;">
+              <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.25rem; font-weight: 600;">Done</div>
+              <div style="margin-bottom: 1rem; color: #1e293b; line-height: 1.5;">{{ sub.report_data.done }}</div>
+              
+              <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.25rem; font-weight: 600;">Remaining</div>
+              <div style="color: #475569; line-height: 1.5;">{{ sub.report_data.remaining }}</div>
+            </td>
+            <td style="padding: 1.5rem; vertical-align: top;">
+              {% if sub.status == 'approved' %}
+                <span class="badge" style="background: #dcfce7; color: #166534; padding: 0.35rem 0.75rem; border-radius: 99px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid #bbf7d0;">Reviewed</span>
+              {% else %}
+                <span class="badge" style="background: #f1f5f9; color: #475569; padding: 0.35rem 0.75rem; border-radius: 99px; border: 1px solid #cbd5e1; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Pending</span>
               {% endif %}
-            </div>
-
-            <!-- Footer -->
-            <div class="report-footer">
-              <div class="footer-meta"><i class="fa-regular fa-clock"></i> Submitted {{ report.submitted_at[:10] }}</div>
-            </div>
-          </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" style="padding: 2rem; text-align: center; color: var(--color-text-muted);">
+              You haven't submitted any daily reports yet (or none match your search).
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if total_pages > 1 %}
+    <div style="padding: 1rem 1.5rem; border-top: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+      <span class="text-muted" style="font-size: 0.875rem;">Page {{ page }} of {{ total_pages }}</span>
+      <div style="display: flex; gap: 0.5rem;">
+        {% if page > 1 %}
+        <a href="{{ url_for('intern.reports', page=page-1, search=search) }}" class="btn btn-secondary btn-sm">Previous</a>
         {% else %}
-          <!-- Empty / Not Generated State for this month -->
-          <div class="report-card" style="text-align: center; padding: 60px 20px;">
-            <div style="background: #f1f5f9; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
-              <i class="fa-solid fa-file-circle-xmark" style="font-size: 2.5rem; color: #94a3b8;"></i>
-            </div>
-            <h3 style="color: #334155; margin-bottom: 10px; font-size: 1.3rem;">Report Not Generated</h3>
-            <p style="color: #64748b; max-width: 400px; margin: 0 auto; line-height: 1.5;">The performance evaluation for Month {{ slide.cycle.month }} has not been published yet. Check back later once your manager completes the evaluation.</p>
-          </div>
+        <button class="btn btn-secondary btn-sm" disabled>Previous</button>
+        {% endif %}
+        
+        {% if page < total_pages %}
+        <a href="{{ url_for('intern.reports', page=page+1, search=search) }}" class="btn btn-secondary btn-sm">Next</a>
+        {% else %}
+        <button class="btn btn-secondary btn-sm" disabled>Next</button>
         {% endif %}
       </div>
-    {% endfor %}
+    </div>
+    {% endif %}
   </div>
+
 </div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    let currentSlide = 0;
-    const totalSlides = {{ carousel_slides|length }};
-    
-    function updateCarousel() {
-      // Hide all slides
-      document.querySelectorAll('.report-slide').forEach(el => el.style.display = 'none');
-      // Show current slide
-      const activeSlide = document.getElementById('slide-' + currentSlide);
-      if (activeSlide) activeSlide.style.display = 'block';
-      
-      // Update indicator
-      document.getElementById('carouselIndicator').innerText = `Month ${currentSlide + 1} of ${totalSlides}`;
-      
-      // Update buttons
-      const prevBtn = document.getElementById('prevBtn');
-      const nextBtn = document.getElementById('nextBtn');
-      
-      if (currentSlide === 0) {
-        prevBtn.disabled = true;
-        prevBtn.style.opacity = '0.4';
-        prevBtn.style.cursor = 'not-allowed';
-      } else {
-        prevBtn.disabled = false;
-        prevBtn.style.opacity = '1';
-        prevBtn.style.cursor = 'pointer';
-      }
-      
-      if (currentSlide === totalSlides - 1) {
-        nextBtn.disabled = true;
-        nextBtn.style.opacity = '0.4';
-        nextBtn.style.cursor = 'not-allowed';
-      } else {
-        nextBtn.disabled = false;
-        nextBtn.style.opacity = '1';
-        nextBtn.style.cursor = 'pointer';
-      }
-    }
-    
-    document.getElementById('prevBtn').addEventListener('click', () => {
-      if (currentSlide > 0) {
-        currentSlide--;
-        updateCarousel();
-      }
-    });
-    
-    document.getElementById('nextBtn').addEventListener('click', () => {
-      if (currentSlide < totalSlides - 1) {
-        currentSlide++;
-        updateCarousel();
-      }
-    });
-    
-    // Initialize
-    if (totalSlides > 0) {
-      updateCarousel();
-    }
-  });
-</script>
-
-{% else %}
-<!-- Empty State -->
-<div class="report-card">
-  <div class="empty-state">
-    <div class="empty-icon"><i class="fa-regular fa-folder-open"></i></div>
-    <h3>No Performance Reports Yet</h3>
-    <p>When your manager submits your monthly evaluation, your scores and official certificate will appear here.</p>
-  </div>
-</div>
-{% endif %}
-
 {% endblock %}
