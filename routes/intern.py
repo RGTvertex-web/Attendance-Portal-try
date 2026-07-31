@@ -381,40 +381,71 @@ def reports():
 @intern_bp.route("/performance")
 @intern_required
 def performance():
-    # Force fresh read to catch newly submitted reports
-    from services.cache_service import global_cache
-    global_cache.invalidate("Performance")
-    
-    reports = ss.get_performance_reports_for_student(g.user["id"])
-    logger.info(
-        "PERF: Intern %s (id=%r) fetched %d performance reports",
-        g.user.get("name"), g.user.get("id"), len(reports)
-    )
-    reports.sort(key=lambda r: r.get("submitted_at", ""), reverse=True)
-    
-    from services.internship_cycle_service import get_internship_cycle
-    j_date = g.user.get("joining_date")
+    import traceback
     try:
-        duration = int(g.user.get("internship_duration_months", 3))
-    except:
-        duration = 3
-    cycle_info = get_internship_cycle(j_date, duration, g.user.get("created_at"))
-    
-    perf_by_month = {}
-    for r in reports:
-        k = str(r.get("period_start", ""))[:7]
-        perf_by_month[k] = r
+        # Force fresh read to catch newly submitted reports
+        from services.cache_service import global_cache
+        global_cache.invalidate("Performance")
         
-    carousel_slides = []
-    for cyc in cycle_info.get("all_cycles", []):
-        k = str(cyc.get("start", ""))[:7]
-        r = perf_by_month.get(k)
-        carousel_slides.append({
-            "cycle": cyc,
-            "report": r
-        })
+        user_id = g.user.get("id") if g.user else None
+        if not user_id:
+            logger.error("PERF: No user ID found in g.user context: %r", g.user)
+            flash("User session invalid. Please log in again.", "error")
+            return redirect(url_for("auth.login"))
+            
+        reports = ss.get_performance_reports_for_student(user_id) or []
+        logger.info(
+            "PERF: Intern %s (id=%r) fetched %d performance reports",
+            g.user.get("name"), user_id, len(reports)
+        )
         
-    return render_template("intern/performance.html", reports=reports, carousel_slides=carousel_slides)
+        # Defensive sorting (handles None values safely)
+        reports.sort(
+            key=lambda r: (r.get("submitted_at") or "") if isinstance(r, dict) else "",
+            reverse=True
+        )
+        
+        from services.internship_cycle_service import get_internship_cycle
+        j_date = g.user.get("joining_date")
+        try:
+            duration = int(g.user.get("internship_duration_months", 3))
+        except (ValueError, TypeError):
+            duration = 3
+        
+        cycle_info = get_internship_cycle(j_date, duration, g.user.get("created_at")) or {}
+        
+        perf_by_month = {}
+        for r in reports:
+            if isinstance(r, dict):
+                k = str(r.get("period_start") or "")[:7]
+                if k:
+                    perf_by_month[k] = r
+            
+        carousel_slides = []
+        all_cycles = cycle_info.get("all_cycles", []) if isinstance(cycle_info, dict) else []
+        for cyc in all_cycles:
+            if isinstance(cyc, dict):
+                k = str(cyc.get("start") or "")[:7]
+                r = perf_by_month.get(k)
+                carousel_slides.append({
+                    "cycle": cyc,
+                    "report": r
+                })
+            
+        return render_template("intern/performance.html", reports=reports, carousel_slides=carousel_slides)
+
+    except Exception as e:
+        err_tb = traceback.format_exc()
+        logger.error(
+            "UNHANDLED EXCEPTION in /intern/performance route for user %r:\nError: %s\nTraceback:\n%s",
+            g.user.get("id") if g.user else "Unknown", e, err_tb
+        )
+        flash(f"An error occurred loading your performance report: {str(e)}", "error")
+        try:
+            return render_template("intern/performance.html", reports=[], carousel_slides=[])
+        except Exception as render_err:
+            logger.error("Failed to render fallback performance.html: %s", render_err)
+            return redirect(url_for("intern.dashboard"))
 
 @intern_bp.route("/performance/acknowledge/<report_id>", methods=["POST"])
 @intern_required
