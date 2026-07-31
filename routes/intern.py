@@ -493,3 +493,4 @@ def download_performance_report_pdf():
         )
         flash(f"Could not generate PDF report. Error: {str(e)}", "error")
         return redirect(url_for("intern.performance"))
+
