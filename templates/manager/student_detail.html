@@ -440,50 +440,54 @@
         <a href="{{ url_for('manager.performance') }}" class="btn-action-outline" style="padding: 0.3rem 0.7rem; font-size: 0.75rem;"><i class="fa-solid fa-plus"></i> New Report</a>
       </div>
       <div class="hrm-card-body">
-        {% if current_perf_report %}
+        {% if perf_reports %}
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <a href="?perf_page={{ page - 1 }}" class="btn-action-outline {% if page <= 1 %}disabled{% endif %}">‹ Previous</a>
-            <span class="text-muted" style="font-size: 0.85rem;">Record {{ page }} of {{ total_perf_pages }}</span>
-            <a href="?perf_page={{ page + 1 }}" class="btn-action-outline {% if page >= total_perf_pages %}disabled{% endif %}">Next ›</a>
+            <button id="perf-prev" class="btn-action-outline disabled">‹ Previous</button>
+            <span id="perf-page-label" class="text-muted" style="font-size: 0.85rem;">Record 1 of {{ perf_reports|length }}</span>
+            <button id="perf-next" class="btn-action-outline {% if perf_reports|length <= 1 %}disabled{% endif %}">Next ›</button>
           </div>
-          <div class="past-perf-card" style="padding: 1.5rem;">
-            <div class="past-perf-header">
-              <div class="past-perf-title">
-                <i class="fa-solid fa-certificate" style="color:#7c3aed;"></i> {{ current_perf_report.get('report_type', 'Monthly') }} Evaluation
-                <span class="status-pill {% if current_perf_report.get('rating', current_perf_report.get('grade_band', '')) in ('Outstanding', 'Excellent', 'Exceeds Expectations') %}pill-present{% elif current_perf_report.get('rating', current_perf_report.get('grade_band', '')) in ('Good', 'Meets Expectations') %}pill-info{% elif current_perf_report.get('rating', current_perf_report.get('grade_band', '')) == 'Satisfactory' %}pill-late{% else %}pill-absent{% endif %}" style="font-size: 0.68rem; margin-left: 0.3rem;">
-                  {{ current_perf_report.get('rating', current_perf_report.get('grade_band', '')) or (current_perf_report.get('total_score', '') ~ '/30') }}
-                </span>
+          <div id="perf-reports-container">
+          {% for pr in perf_reports %}
+            <div class="past-perf-card perf-report-card" data-page="{{ loop.index }}" style="padding: 1.5rem; display: {% if loop.index == 1 %}block{% else %}none{% endif %};">
+              <div class="past-perf-header">
+                <div class="past-perf-title">
+                  <i class="fa-solid fa-certificate" style="color:#7c3aed;"></i> {{ pr.get('report_type', 'Monthly') }} Evaluation
+                  <span class="status-pill {% if pr.get('rating', pr.get('grade_band', '')) in ('Outstanding', 'Excellent', 'Exceeds Expectations') %}pill-present{% elif pr.get('rating', pr.get('grade_band', '')) in ('Good', 'Meets Expectations') %}pill-info{% elif pr.get('rating', pr.get('grade_band', '')) == 'Satisfactory' %}pill-late{% else %}pill-absent{% endif %}" style="font-size: 0.68rem; margin-left: 0.3rem;">
+                    {{ pr.get('rating', pr.get('grade_band', '')) or (pr.get('total_score', '') ~ '/30') }}
+                  </span>
+                </div>
+                <div class="past-perf-date">{{ (pr.get('created_at') or pr.get('submitted_at', ''))[:10] }}</div>
               </div>
-              <div class="past-perf-date">{{ (current_perf_report.get('created_at') or current_perf_report.get('submitted_at', ''))[:10] }}</div>
-            </div>
-            <div class="p-2 my-2" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 0.75rem;">
-              <div style="font-weight: 700; color: #64748b; margin-bottom: 0.3rem;"><i class="fa-solid fa-file-invoice" style="color: #7c3aed;"></i> Official PDF Export Metrics (out of 10):</div>
-              <div class="d-flex flex-wrap gap-4 mt-2">
-                <div class="d-flex flex-column">
-                  <span style="color:#64748b; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Init</span>
-                  <strong style="color:#0f172a; font-size: 0.85rem;">{{ current_perf_report.get('derived_initiative', current_perf_report.get('initiative', '0')) }}</strong>
-                </div>
-                <div class="d-flex flex-column">
-                  <span style="color:#64748b; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Tasks</span>
-                  <strong style="color:#0f172a; font-size: 0.85rem;">{{ current_perf_report.get('derived_tasks_completed', 0) }} / {{ current_perf_report.get('derived_tasks_assigned', 0) }} <span style="color:#64748b; font-size: 0.75rem;">({{ current_perf_report.get('derived_completion_pct', '0%') }})</span></strong>
-                </div>
-                <div class="d-flex flex-column">
-                  <span style="color:#64748b; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Behav</span>
-                  <strong style="color:#0f172a; font-size: 0.85rem;">{{ current_perf_report.get('derived_behavioral_index', '–') }}</strong>
-                </div>
-                <div class="d-flex flex-column">
-                  <span style="color:#64748b; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Obtained</span>
-                  <strong style="color:#0f172a; font-size: 0.85rem;">{{ current_perf_report.get('derived_obtained_score', '–') }}</strong>
-                </div>
-                <div class="d-flex flex-column">
-                  <span style="color:#64748b; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Standing</span>
-                  <span class="badge" style="background: {% if current_perf_report.get('derived_standing') == 'PASS' %}#dcfce7; color:#15803d{% else %}#fee2e2; color:#b91c1c{% endif %}; font-size: 0.65rem; width: fit-content;">{{ current_perf_report.get('derived_standing', '–') }}</span>
+              <div class="p-2 my-2" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 0.75rem;">
+                <div style="font-weight: 700; color: #64748b; margin-bottom: 0.3rem;"><i class="fa-solid fa-file-invoice" style="color: #7c3aed;"></i> Official PDF Export Metrics (out of 10):</div>
+                <div class="d-flex flex-wrap gap-4 mt-2">
+                  <div class="d-flex flex-column">
+                    <span style="color:#64748b; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Init</span>
+                    <strong style="color:#0f172a; font-size: 0.85rem;">{{ pr.get('derived_initiative', pr.get('initiative', '0')) }}</strong>
+                  </div>
+                  <div class="d-flex flex-column">
+                    <span style="color:#64748b; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Tasks</span>
+                    <strong style="color:#0f172a; font-size: 0.85rem;">{{ pr.get('derived_tasks_completed', 0) }} / {{ pr.get('derived_tasks_assigned', 0) }} <span style="color:#64748b; font-size: 0.75rem;">({{ pr.get('derived_completion_pct', '0%') }})</span></strong>
+                  </div>
+                  <div class="d-flex flex-column">
+                    <span style="color:#64748b; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Behav</span>
+                    <strong style="color:#0f172a; font-size: 0.85rem;">{{ pr.get('derived_behavioral_index', '–') }}</strong>
+                  </div>
+                  <div class="d-flex flex-column">
+                    <span style="color:#64748b; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Obtained</span>
+                    <strong style="color:#0f172a; font-size: 0.85rem;">{{ pr.get('derived_obtained_score', '–') }}</strong>
+                  </div>
+                  <div class="d-flex flex-column">
+                    <span style="color:#64748b; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Standing</span>
+                    <span class="badge" style="background: {% if pr.get('derived_standing') == 'PASS' %}#dcfce7; color:#15803d{% else %}#fee2e2; color:#b91c1c{% endif %}; font-size: 0.65rem; width: fit-content;">{{ pr.get('derived_standing', '–') }}</span>
+                  </div>
                 </div>
               </div>
+              <div class="past-perf-body">
+                {{ pr.get('feedback') or pr.get('overall_comments') or pr.get('strengths') or 'No additional feedback provided.' }}
+              </div>
             </div>
-            <div class="past-perf-body">
-              {{ current_perf_report.get('feedback') or current_perf_report.get('overall_comments') or current_perf_report.get('strengths') or 'No additional feedback provided.' }}
-            </div>
+          {% endfor %}
           </div>
         {% else %}
           <div class="empty-state-box" style="padding: 2rem 0;">
@@ -549,6 +553,39 @@
     if(prevBtn) prevBtn.disabled = currentDailyPage === 1;
     const nextBtn = document.getElementById('daily-next-btn');
     if(nextBtn) nextBtn.disabled = currentDailyPage === maxDailyPage;
+  }
+
+  let currentPerfPage = 1;
+  const perfCards = document.querySelectorAll('.perf-report-card');
+  if (perfCards.length > 0) {
+    function showPerfPage(n) {
+      perfCards.forEach(c => c.style.display = (parseInt(c.dataset.page) === n) ? 'block' : 'none');
+      const label = document.getElementById('perf-page-label');
+      if(label) label.textContent = `Record ${n} of ${perfCards.length}`;
+      currentPerfPage = n;
+      
+      const prevBtn = document.getElementById('perf-prev');
+      if(prevBtn) {
+        if(n <= 1) prevBtn.classList.add('disabled');
+        else prevBtn.classList.remove('disabled');
+      }
+      
+      const nextBtn = document.getElementById('perf-next');
+      if(nextBtn) {
+        if(n >= perfCards.length) nextBtn.classList.add('disabled');
+        else nextBtn.classList.remove('disabled');
+      }
+    }
+    
+    document.getElementById('perf-prev').addEventListener('click', (e) => {
+      e.preventDefault();
+      showPerfPage(Math.max(1, currentPerfPage - 1));
+    });
+    
+    document.getElementById('perf-next').addEventListener('click', (e) => {
+      e.preventDefault();
+      showPerfPage(Math.min(perfCards.length, currentPerfPage + 1));
+    });
   }
 </script>
 {% endblock %}
