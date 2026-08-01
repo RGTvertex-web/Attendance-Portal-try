@@ -329,12 +329,7 @@ def student_detail(intern_id):
     warnings = ss.get_warnings_for_student(intern_id)
     submissions = ss.get_submissions_for_student(intern_id)
     perf_reports = ss.get_performance_reports_for_student(intern_id)
-    
-    page = int(request.args.get("perf_page", 1))
     perf_reports_sorted = sorted(perf_reports, key=lambda r: r.get("created_at", r.get("submitted_at", "")), reverse=True)
-    total_perf_pages = len(perf_reports_sorted)
-    page = max(1, min(page, total_perf_pages)) if total_perf_pages else 1
-    current_perf_report = perf_reports_sorted[page - 1] if perf_reports_sorted else None
     
     # Parse JSON notes if possible
     for sub in submissions:
@@ -348,8 +343,7 @@ def student_detail(intern_id):
     return render_template("manager/student_detail.html",
                            student=intern, att_summary=att_summary,
                            warnings=warnings, submissions=submissions,
-                           current_perf_report=current_perf_report,
-                           page=page, total_perf_pages=total_perf_pages,
+                           perf_reports=perf_reports_sorted,
                            manager_notes=manager_notes)
 
 @manager_bp.route("/interns/<intern_id>/notes", methods=["POST"])
