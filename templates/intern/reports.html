@@ -3,12 +3,28 @@
 {% block page_title %}My Reports{% endblock %}
 
 {% block content %}
-<div style="max-width: 800px; margin: 2rem auto;">
-  
-  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+<style>
+  .reports-container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+  .reports-hero { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 2rem; }
+  .reports-hero-title { font-size: 2rem; margin-bottom: 0; }
+  .search-wrapper { width: 100%; max-width: 250px; }
+  .search-input { width: 100%; padding-left: 2.5rem; border-radius: 99px; }
+
+  @media (min-width: 768px) {
+    .reports-hero { flex-direction: row; justify-content: space-between; align-items: flex-end; }
+  }
+  @media (max-width: 640px) {
+    .search-wrapper { max-width: 100%; }
+    .card-header-past { flex-direction: column; align-items: flex-start !important; }
+    .card-header-past form { width: 100%; }
+  }
+</style>
+
+<div class="reports-container">
+  <div class="reports-hero">
     <div>
-      <h1 class="hero-title" style="font-size: 2rem; margin-bottom: 0.5rem;">My Reports</h1>
-      <p class="text-muted">Submit your daily progress reports.</p>
+      <h1 class="hero-title reports-hero-title">My Reports</h1>
+      <p class="text-muted m-0">Submit your daily progress reports.</p>
     </div>
   </div>
 
@@ -44,14 +60,14 @@
   </div>
 
   <div class="card">
-    <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div class="card-header card-header-past" style="border-bottom: 1px solid var(--color-border); padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
       <div style="font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; gap: 0.75rem;">
         <i class="fa-solid fa-clock-rotate-left text-muted"></i> Past Reports
       </div>
       <form method="GET" action="{{ url_for('intern.reports') }}" style="display: flex; gap: 0.5rem; align-items: center;">
-        <div style="position: relative;">
+        <div class="search-wrapper" style="position: relative;">
           <i class="fa-solid fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
-          <input type="text" name="search" class="form-control" placeholder="Search reports..." value="{{ search }}" style="width: 250px; padding-left: 2.5rem; border-radius: 99px;" onblur="this.form.submit()">
+          <input type="text" name="search" class="form-control search-input" placeholder="Search reports..." value="{{ search | default('') }}" onblur="this.form.submit()">
         </div>
         <noscript><button type="submit" class="btn btn-secondary btn-sm">Search</button></noscript>
       </form>
