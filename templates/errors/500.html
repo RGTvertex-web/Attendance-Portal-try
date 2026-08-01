@@ -1,8 +1,8 @@
-{% extends "base.html" %}
+{% extends "base_dashboard.html" %}
 
-{% block title %}500 Internal Server Error{% endblock %}
+{% block page_title %}500 Internal Server Error{% endblock %}
 
-{% block head %}
+{% block content %}
 <style>
   .error-container {
     display: flex;
@@ -33,9 +33,7 @@
     margin-bottom: 2rem;
   }
 </style>
-{% endblock %}
 
-{% block content %}
 <div class="error-container">
   <div class="error-code">500</div>
   <h1 class="error-title">Internal Server Error</h1>
