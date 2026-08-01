@@ -311,14 +311,8 @@ def profile():
             if g.user.get("role") == "intern":
                 university = request.form.get("university", "").strip()
                 if university and university != g.user.get("college_name"):
-                    try:
-                        supa.get_supabase_client().table("users").update({"college_name": university}).eq("id", g.user["id"]).execute()
-                        g.user["college_name"] = university
-                    except Exception as e:
-                        if "college_name" in str(e):
-                            pass # Gracefully handle missing column in older schemas
-                        else:
-                            raise e
+                    supa.update_profile(g.user["id"], college_name=university)
+                    g.user["college_name"] = university
                     
             if name or password:
                 updated_user = supa.update_profile_and_password(
