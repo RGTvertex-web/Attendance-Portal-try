@@ -461,17 +461,8 @@ def decide_extension(extension_id):
                 requested_months = int(ext.get("requested_months", 0))
                 new_duration = current_duration + requested_months
                 
-                # Update in Supabase
-                supabase = supa.get_supabase_client()
-                supabase.table("users").update({"internship_duration_months": new_duration}).eq("id", ext["intern_id"]).execute()
-                
-                # Update in Sheets (find and replace)
-                sheet = ss._get_sheet("Users")
-                all_rows = sheet.get_all_values()
-                for i, row in enumerate(all_rows[1:], start=2):
-                    if row[0] == ext["intern_id"]:
-                        sheet.update_cell(i, ss.SHEET_HEADERS["Users"].index("internship_duration_months") + 1, str(new_duration))
-                        break
+                # Update in Supabase and Sheets via central helper
+                supa.update_profile(ext["intern_id"], internship_duration_months=new_duration)
                         
                 logger.info("AUDIT: Extended internship for %s to %s months", ext["intern_id"], new_duration)
             except Exception as e:
