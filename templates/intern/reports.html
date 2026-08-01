@@ -17,7 +17,12 @@
     .search-wrapper { max-width: 100%; }
     .card-header-past { flex-direction: column; align-items: flex-start !important; }
     .card-header-past form { width: 100%; }
+    .card-body { padding: 1rem !important; }
   }
+  
+  /* Fix textarea overflow caused by long placeholders on mobile Safari/Chrome */
+  .form-control { max-width: 100%; overflow-x: hidden; }
+  textarea.form-control { max-width: 100%; }
 </style>
 
 <div class="reports-container">
