@@ -1,0 +1,441 @@
+{% extends "base_dashboard.html" %}
+
+{% block page_title %}User Management{% endblock %}
+
+{% block content %}
+<style>
+  /* Applied Primary Palette */
+  :root, .main-content {
+    --color-bg: #ffffff;
+    --color-bg-soft: #f5f5f5;
+    --color-bg-soft-2: #fafafa;
+    --color-ink: #111111;
+    --color-ink-soft: #4b4b4b;
+    --color-ink-faint: #737373;
+    
+    /* Map to existing classes/vars */
+    --color-surface: var(--color-bg);
+    --color-surface-hover: var(--color-bg-soft);
+    --text-dark: var(--color-ink);
+    --text-muted: var(--color-ink-soft);
+  }
+  
+  .hero-title, .card-title, h1, h2, h3 { color: var(--color-ink) !important; }
+  .text-muted { color: var(--color-ink-soft) !important; }
+  .employee-ui-card { 
+    background: var(--color-bg) !important; 
+    border-color: #e5e5e5 !important;
+  }
+  .employee-ui-card .card-footer {
+    background: var(--color-bg-soft-2) !important;
+  }
+</style>
+<!-- ── Header & Actions ─────────────────────────────────────────────────── -->
+<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+  <div>
+    <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 0.5rem;">User Management</h1>
+    <p class="text-muted" style="margin: 0;">View, edit, and deactivate accounts across the organization.</p>
+  </div>
+  <div style="display: flex; gap: 1rem; align-items: center;">
+    <form id="syncForm" method="POST" action="{{ url_for('admin.repair_sheet_sync') }}" style="margin: 0;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="button" class="btn btn-secondary" onclick="confirmSync()" style="border: 1px solid var(--border-color); background-color: var(--color-surface); color: var(--text-dark);">
+        <i class="fa-solid fa-cloud-arrow-down"></i> Sync to Sheet<i class="fa-solid fa-arrows-rotate" style="margin-left: 0.5rem; color: var(--color-brand-blue, #3b82f6);"></i>
+      </button>
+    </form>
+    <a href="{{ url_for('admin.invite_manager') }}" class="btn btn-secondary">
+      Invite Manager <i class="fa-solid fa-envelope" style="margin-left: 0.5rem;"></i>
+    </a>
+    <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary">
+      Create New User <i class="fa-solid fa-arrow-right" style="margin-left: 0.5rem;"></i>
+    </a>
+  </div>
+</div>
+
+<!-- ── Filters ─────────────────────────────────────────────────────────────── -->
+<div class="card mb-4" style="padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem; background-color: var(--color-surface-hover);">
+  <form method="GET" action="{{ url_for('admin.users') }}" style="display: flex; align-items: center; gap: 1rem; width: 100%;">
+    <input type="text" name="search" class="form-control" placeholder="Search name/email..." value="{{ search | default('') }}" style="width: 250px;">
+    <span class="text-muted" style="font-weight: 600; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; margin-left: auto;">Filter By:</span>
+    <select name="role" class="form-select" style="width: auto; flex-grow: 1;">
+      <option value="">All Roles</option>
+      <option value="admin"   {% if role_filter=='admin' %}selected{% endif %}>Admin</option>
+      <option value="manager" {% if role_filter=='manager' %}selected{% endif %}>Manager</option>
+      <option value="intern"  {% if role_filter=='intern' %}selected{% endif %}>Intern</option>
+    </select>
+    <select name="status" class="form-select" style="width: auto; flex-grow: 1;">
+      <option value="">All Status</option>
+      <option value="active"   {% if status_filter=='active' %}selected{% endif %}>Active</option>
+      <option value="inactive" {% if status_filter=='inactive' %}selected{% endif %}>Terminated</option>
+      <option value="at_risk"  {% if status_filter=='at_risk' %}selected{% endif %}>At Risk</option>
+    </select>
+    <select name="department" class="form-select" style="width: auto; flex-grow: 1;">
+      <option value="">All Departments</option>
+      {% for d in DEPARTMENTS %}
+      <option value="{{ d }}" {% if department_filter==d %}selected{% endif %}>{{ d }}</option>
+      {% endfor %}
+    </select>
+    <div style="display: flex; gap: 0.5rem;">
+      <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+      <a href="{{ url_for('admin.users') }}" class="btn btn-secondary btn-sm">Clear</a>
+    </div>
+  </form>
+</div>
+
+<!-- ── View Mode Controls ── -->
+<div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 1rem;">
+  <div class="view-switcher-group" style="display: flex; background: var(--color-surface-hover, #f1f5f9); padding: 0.2rem; border-radius: 0.6rem; border: 1px solid var(--border-color, #e2e8f0);">
+    <button type="button" class="btn-view-mode active" id="btnAdminGridMode" onclick="switchAdminView('grid')" style="border: none; background: var(--color-surface, #fff); color: var(--text-dark, #0f172a); padding: 0.4rem 0.9rem; border-radius: 0.45rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 0.4rem;">
+      <i class="fa-solid fa-grid-2"></i> Grid Cards
+    </button>
+    <button type="button" class="btn-view-mode" id="btnAdminTableMode" onclick="switchAdminView('table')" style="border: none; background: transparent; color: var(--text-muted, #64748b); padding: 0.4rem 0.9rem; border-radius: 0.45rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
+      <i class="fa-solid fa-list"></i> Table List
+    </button>
+  </div>
+</div>
+
+<!-- Grid View (Default) -->
+<div id="adminGridView" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+  {% for user in users %}
+  <div class="employee-ui-card" style="background: var(--color-surface, #ffffff); border: 1px solid var(--border-color, #e2e8f0); border-radius: 1.25rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02); transition: all 0.2s ease; display: flex; flex-direction: column; overflow: hidden; position: relative;">
+
+    <div style="padding: 1.25rem 1.25rem 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+      <span style="background: var(--color-bg-soft); color: var(--color-ink); border: 1px solid #e5e5e5; font-size: 0.78rem; font-weight: 700; padding: 0.28rem 0.8rem; border-radius: 0.5rem; text-transform: capitalize;">
+        {{ user.role | title }}
+      </span>
+      <span class="status-badge {% if user.status=='active' %}status-active{% elif user.status=='at_risk' %}status-risk{% else %}status-danger{% endif %}" style="display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.4rem 0.8rem; border-radius: 2rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; {% if user.status=='inactive' %}background: #fee2e2; color: #ef4444;{% endif %}">
+          <i class="fa-solid {% if user.status=='active' %}fa-check-circle{% elif user.status=='at_risk' %}fa-triangle-exclamation{% else %}fa-ban{% endif %}"></i>
+          {{ 'At Risk' if user.status == 'at_risk' else ('Terminated' if user.status == 'inactive' else user.status | title) }}
+        </span>
+      <div class="dropdown" style="position: relative; display: inline-block;">
+        <button type="button" style="width: 32px; height: 32px; border: 1px solid var(--border-color, #e2e8f0); border-radius: 0.5rem; background: var(--color-surface, #fff); color: var(--text-muted, #64748b); font-size: 1rem; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="toggleDropdown(this)">
+          <i class="fa-solid fa-ellipsis-vertical"></i>
+        </button>
+        <ul class="dropdown-menu" style="display: none; position: absolute; right: 0; top: calc(100% + 4px); background: #fff; border: 1px solid #e2e8f0; border-radius: .625rem; box-shadow: 0 8px 24px rgba(0,0,0,.1); min-width: 170px; z-index: 300; list-style: none; padding: 0; margin: 0; overflow: hidden;">
+          <li>
+            <a class="dropdown-item" href="{{ url_for('admin.edit_user', user_id=user.id) }}" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1rem; color: #0f172a; text-decoration: none; font-size: 0.85rem;">
+              <i class="fa-solid fa-pen-to-square" style="color: #64748b;"></i> Edit User
+            </a>
+          </li>
+          {% if user.status != 'inactive' and user.id != g.user.id %}
+          <li style="border-top: 1px solid #f1f5f9; margin: 0.25rem 0;"></li>
+          <li>
+            <a class="dropdown-item text-warning" href="#" onclick="confirmDeactivation('{{ user.id }}', '{{ user.name|escape }}'); return false;" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1rem; color: #ea580c; text-decoration: none; font-size: 0.85rem;">
+              <i class="fa-solid fa-user-slash"></i> Deactivate
+            </a>
+          </li>
+          {% endif %}
+          {% if user.id != g.user.id %}
+          <li style="border-top: 1px solid #f1f5f9; margin: 0.25rem 0;"></li>
+          <li>
+            <form id="delete-form-card-{{ user.id }}" method="POST" action="{{ url_for('admin.delete_user_route', user_id=user.id) }}" style="display: none;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            </form>
+            <a class="dropdown-item text-danger" href="#" onclick="confirmDelete('{{ user.id }}', '{{ user.name|escape }}', 'delete-form-card-{{ user.id }}'); return false;" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1rem; color: #dc2626; text-decoration: none; font-size: 0.85rem;">
+              <i class="fa-solid fa-trash"></i> Delete
+            </a>
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+
+    <div style="padding: 0.5rem 1.25rem 1.25rem;">
+      <div style="display: flex; align-items: center; gap: 0.85rem;">
+        <div style="width: 52px; height: 52px; border-radius: 50%; background: var(--color-ink); color: #fff; font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+          {{ user.name[:2]|upper }}
+        </div>
+        <div>
+          <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-dark, #0f172a); margin: 0 0 0.15rem;">{{ user.name }}</div>
+          <div style="font-size: 0.82rem; color: var(--text-muted, #64748b); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;" title="{{ user.email }}">{{ user.email }}</div>
+        </div>
+      </div>
+      <div style="margin-top: 1rem; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.85rem; border: 1px solid var(--border-color, #e2e8f0); border-radius: 0.5rem; background: var(--color-surface, #ffffff); font-size: 0.82rem; font-weight: 600; color: var(--text-dark, #0f172a); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+        <span style="width: 6px; height: 6px; border-radius: 50%; background: {% if user.status=='active' %}#10b981{% elif user.status=='at_risk' %}#f59e0b{% else %}#ef4444{% endif %}; display: inline-block;"></span>
+        {% if user.department %}{{ user.department }}{% else %}General{% endif %} <span style="color: var(--text-muted, #cbd5e1); margin: 0 0.3rem;">|</span> {{ user.role | title }}
+      </div>
+    </div>
+
+    <div style="margin-top: auto; border-top: 1px solid var(--border-color, #f1f5f9); padding: 1rem 1.25rem; background: var(--color-surface-hover, #fcfcfd); display: flex; flex-direction: column; gap: 0.4rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+        <span style="color: var(--text-muted, #64748b); font-weight: 500;">RGT ID</span>
+        <span style="color: var(--text-dark, #0f172a); font-weight: 700;">{{ user.intern_id or '—' }}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+        <span style="color: var(--text-muted, #64748b); font-weight: 500;">Join Date</span>
+        <span style="color: var(--text-dark, #0f172a); font-weight: 700;">{{ user.joining_date or (user.created_at[:10] if user.created_at else '—') }}</span>
+      </div>
+    </div>
+
+  </div>
+  {% else %}
+  <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--text-muted, #94a3b8); font-weight: 500;">
+    No users found matching your filters.
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Table View (Hidden by default) -->
+<div id="adminTableView" style="display: none;">
+  <div class="card">
+  <form id="bulkForm" method="POST" action="{{ url_for('admin.bulk_users') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <!-- Bulk Action Toolbar (Hidden by default) -->
+    <div id="bulkToolbar" style="display: none; padding: 1rem 1.5rem; background-color: var(--color-surface-hover); border-bottom: 1px solid var(--color-border); align-items: center; gap: 1rem;">
+      <span style="font-weight: 600;"><span id="selectedCount">0</span> selected</span>
+      
+      <select name="bulk_action" class="form-select" style="width: auto; margin-left: auto;" id="bulkActionSelect" onchange="toggleBulkReason()">
+        <option value="">— Select Action —</option>
+        <option value="deactivate">Deactivate Users</option>
+        <option value="export_csv">Export CSV</option>
+      </select>
+      
+      <select name="bulk_deactivation_reason" class="form-select" style="width: auto; display: none;" id="bulkReasonSelect">
+        <option value="terminated">Terminated</option>
+        <option value="completed">Internship Completed</option>
+      </select>
+      
+      <select name="bulk_department" class="form-select" style="width: auto;" id="bulkDeptSelect">
+        <option value="">— Reassign Department —</option>
+        {% for d in DEPARTMENTS %}
+        <option value="{{ d }}">{{ d }}</option>
+        {% endfor %}
+      </select>
+      
+      <button type="button" class="btn btn-primary btn-sm" onclick="confirmBulkAction()">Apply</button>
+    </div>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width: 40px; text-align: center;">
+            <input type="checkbox" id="selectAll" onclick="toggleAll(this)">
+          </th>
+          <th>Name & Email</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Manager</th>
+          <th>Created</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td style="text-align: center;">
+            <input type="checkbox" name="user_ids" value="{{ user.id }}" class="row-cb" onclick="updateBulkToolbar()">
+          </td>
+          <td>
+            <div style="font-weight: 500;">
+              {{ user.name }}
+              {% if user.intern_id %}
+                <span class="text-muted" style="font-size: 0.8em;">({{ user.intern_id }})</span>
+              {% endif %}
+            </div>
+            <div class="text-muted" style="font-size: 0.75rem;">{{ user.email }}</div>
+          </td>
+          <td><span class="badge badge-{{ user.role }}">{{ user.role | title }}</span></td>
+          <td>
+            {% if user.status == 'active' %}
+              <span class="badge badge-active">Active</span>
+            {% elif user.status == 'inactive' %}
+              <span class="badge badge-danger">Terminated</span>
+            {% elif user.status == 'at_risk' %}
+              <span class="badge badge-danger">At Risk</span>
+            {% else %}
+              <span class="badge badge-neutral">{{ user.status }}</span>
+            {% endif %}
+          </td>
+          <td class="text-muted">
+            {% if user.manager_id %}
+              {% set mgr = managers | selectattr('id', 'equalto', user.manager_id) | first %}
+              {% if mgr %}{{ mgr.name }}{% else %}<span class="text-muted">{{ user.manager_id[:8] }}…</span>{% endif %}
+            {% else %}—{% endif %}
+          </td>
+          <td class="text-muted" style="font-size: 0.875rem;">{{ user.created_at[:10] if user.created_at else '—' }}</td>
+          <td style="text-align: right;">
+            <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+              <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-secondary btn-sm">Edit</a>
+              {% if user.status != 'inactive' and user.id != g.user.id %}
+              <form id="deactivate-form-{{ user.id }}" method="POST" action="{{ url_for('admin.deactivate_user', user_id=user.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="deactivation_reason" value="">
+                <button type="button" class="btn btn-outline btn-sm" style="color: #ea580c; border-color: #ea580c;"
+                        onclick="confirmDeactivation('{{ user.id }}', '{{ user.name|escape }}')">Deactivate</button>
+              </form>
+              {% endif %}
+              
+              {% if user.id != g.user.id %}
+              <form id="delete-form-tbl-{{ user.id }}" method="POST" action="{{ url_for('admin.delete_user_route', user_id=user.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="button" class="btn btn-outline btn-sm" style="color: #dc2626; border-color: #dc2626;" onclick="confirmDelete('{{ user.id }}', '{{ user.name|escape }}', 'delete-form-tbl-{{ user.id }}')">Delete</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="text-center text-muted" style="padding: 3rem 0;">
+            No users found matching the current filters.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  </form>
+  
+  {% if total_pages > 1 %}
+  <div style="padding: 1rem 1.5rem; display: flex; justify-content: center; border-top: 1px solid var(--color-border); gap: 0.5rem;">
+    {% if page > 1 %}
+    <a href="{{ url_for('admin.users', page=page-1, role=role_filter, status=status_filter, department=department_filter, search=search) }}" class="btn btn-outline btn-sm">Previous</a>
+    {% endif %}
+    
+    <span class="text-muted" style="padding: 0.25rem 0.5rem;">Page {{ page }} of {{ total_pages }}</span>
+    
+    {% if page < total_pages %}
+    <a href="{{ url_for('admin.users', page=page+1, role=role_filter, status=status_filter, department=department_filter, search=search) }}" class="btn btn-outline btn-sm">Next</a>
+    {% endif %}
+  </div>
+  {% endif %}
+  </div>
+</div>
+
+<script>
+function switchAdminView(mode) {
+  const grid = document.getElementById('adminGridView');
+  const tbl  = document.getElementById('adminTableView');
+  const btnG = document.getElementById('btnAdminGridMode');
+  const btnT = document.getElementById('btnAdminTableMode');
+  if (!grid || !tbl) return;
+  if (mode === 'grid') {
+    grid.style.display = 'grid';
+    tbl.style.display = 'none';
+    if (btnG) { btnG.style.background = 'var(--color-surface, #fff)'; btnG.style.color = 'var(--text-dark, #0f172a)'; btnG.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)'; }
+    if (btnT) { btnT.style.background = 'transparent'; btnT.style.color = 'var(--text-muted, #64748b)'; btnT.style.boxShadow = 'none'; }
+  } else {
+    grid.style.display = 'none';
+    tbl.style.display = 'block';
+    if (btnT) { btnT.style.background = 'var(--color-surface, #fff)'; btnT.style.color = 'var(--text-dark, #0f172a)'; btnT.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)'; }
+    if (btnG) { btnG.style.background = 'transparent'; btnG.style.color = 'var(--text-muted, #64748b)'; btnG.style.boxShadow = 'none'; }
+  }
+}
+function toggleDropdown(btn) {
+  const menu = btn.nextElementSibling;
+  document.querySelectorAll('.dropdown-menu').forEach(m => { if (m !== menu) m.style.display = 'none'; });
+  menu.style.display = (menu.style.display === 'none' || !menu.style.display) ? 'block' : 'none';
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.dropdown')) {
+    document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
+  }
+});
+
+
+function toggleAll(source) {
+  checkboxes = document.querySelectorAll('.row-cb');
+  for(var i=0, n=checkboxes.length; i<n; i++) {
+    checkboxes[i].checked = source.checked;
+  }
+  updateBulkToolbar();
+}
+
+function updateBulkToolbar() {
+  var count = document.querySelectorAll('.row-cb:checked').length;
+  document.getElementById('selectedCount').innerText = count;
+  document.getElementById('bulkToolbar').style.display = count > 0 ? 'flex' : 'none';
+}
+
+function toggleBulkReason() {
+  const action = document.getElementById('bulkActionSelect').value;
+  const reason = document.getElementById('bulkReasonSelect');
+  const dept = document.getElementById('bulkDeptSelect');
+  reason.style.display = (action === 'deactivate') ? 'inline-block' : 'none';
+  dept.style.display = (action === 'reassign_department') ? 'inline-block' : 'none';
+}
+
+function confirmBulkAction() {
+  Swal.fire({
+    title: 'Confirm Bulk Action',
+    text: 'Are you sure you want to apply this action to all selected users?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, Apply',
+    confirmButtonColor: 'var(--color-primary)'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      document.getElementById('bulkForm').submit();
+    }
+  });
+}
+
+function confirmSync() {
+  Swal.fire({
+    title: 'Sync Supabase to Sheets?',
+    text: 'This will overwrite the Google Sheets Users tab with the current database values to repair any out-of-sync fields.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, Sync',
+    confirmButtonColor: 'var(--color-secondary)'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      document.getElementById('syncForm').submit();
+    }
+  });
+}
+
+function confirmDelete(userId, userName, formId) {
+  Swal.fire({
+    title: 'Permanently Delete User?',
+    html: `Are you absolutely sure you want to delete <b>${userName}</b>? This action <b>cannot be undone</b>!`,
+    icon: 'error',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, Delete',
+    confirmButtonColor: '#dc2626'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      document.getElementById(formId).submit();
+    }
+  });
+}
+
+function confirmDeactivation(userId, userName) {
+  if (typeof Swal !== 'undefined') {
+    Swal.fire({
+        title: `Deactivate ${userName}?`,
+        html: `
+            <p>Please select a reason for deactivation:</p>
+            <select id="swal-reason" class="form-select" style="width: 100%; padding: 0.5rem; margin-bottom: 1rem; border: 1px solid #ccc; border-radius: 4px;">
+                <option value="terminated">Terminated</option>
+                <option value="completed">Internship Completed</option>
+            </select>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Deactivate',
+        confirmButtonColor: 'var(--color-danger)',
+        preConfirm: () => {
+            return document.getElementById('swal-reason').value;
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.getElementById('deactivate-form-' + userId);
+            form.querySelector('input[name="deactivation_reason"]').value = result.value;
+            form.submit();
+        }
+    });
+  } else {
+    // Fallback if Swal fails to load
+    const reason = prompt(`Deactivate ${userName}? Type "terminated" or "completed" as reason:`, "terminated");
+    if (reason && (reason === "terminated" || reason === "completed")) {
+        const form = document.getElementById('deactivate-form-' + userId);
+        form.querySelector('input[name="deactivation_reason"]').value = reason;
+        form.submit();
+    }
+  }
+}
+</script>
+{% endblock %}

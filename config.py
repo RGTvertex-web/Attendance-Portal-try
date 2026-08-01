@@ -90,4 +90,6 @@ class ProductionConfig(BaseConfig):
 
 def get_config():
     env = os.environ.get("FLASK_ENV", "development").lower()
+    if os.environ.get("VERCEL") == "1":
+        env = "production"
     return ProductionConfig if env == "production" else DevelopmentConfig
