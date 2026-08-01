@@ -145,6 +145,15 @@ def safe_int(val, default=0) -> int:
     except (ValueError, TypeError, IndexError):
         return default
 
+def get_graduation_verdict(status: str, deact_reason: str, duration: int, valid_scores: list, cum_score: float, att_rate: float, min_att: float, min_perf: float) -> tuple[str, str]:
+    """Helper to determine graduation verdict and color to avoid duplicated logic."""
+    status = status.lower()
+    if status == "inactive" and deact_reason:
+        return "TERMINATED", "#991b1b"
+    elif status in ("completed", "graduated") or (len(valid_scores) >= duration and cum_score >= min_perf and att_rate >= min_att):
+        return "COMPLETED", "#15803d" # or "#166534"
+    else:
+        return "IN PROCESS", "#b45309"
 
 def generate_internship_report_pdf(intern_profile: dict, host_url: str = "") -> bytes:
     """
@@ -246,12 +255,14 @@ def _generate_internship_report_pdf_inner(intern_profile: dict, host_url: str = 
     name          = safe_str(intern_profile.get("name"),          "Unknown Intern")
     email         = safe_str(intern_profile.get("email"),         "N/A")
     phone         = safe_str(intern_profile.get("phone") or sheet_user.get("phone"), "N/A")
-    joining_date  = safe_str(intern_profile.get("joining_date") or sheet_user.get("joining_date"), "N/A")
     duration      = safe_int(intern_profile.get("internship_duration_months"), 3) or 3
     department    = safe_str(intern_profile.get("department"),    "General")
     college_name  = safe_str(intern_profile.get("college_name") or sheet_user.get("college_name"), "N/A")
     status        = safe_str(intern_profile.get("status"),        "active").lower()
     deact_reason  = safe_str(intern_profile.get("deactivation_reason"), "")
+    
+    cycle_info = get_internship_cycle(intern_profile.get("joining_date"), duration, intern_profile.get("created_at"))
+    joining_date  = safe_str(cycle_info.get("joining_date") or sheet_user.get("joining_date"), "N/A")
 
     # ── SECTION I: Intern Details (two-column) ──────────────────────────────
     sec1_hdr = Paragraph("<b>SECTION I — INTERN REGISTRATION & ENROLLMENT DETAILS</b>", s_sec)
@@ -431,6 +442,8 @@ def _generate_internship_report_pdf_inner(intern_profile: dict, host_url: str = 
     att_rate       = round((total_present / total_sched)*100, 1) if total_sched > 0 else (100.0 if total_present > 0 else 0.0)
     att_color      = "#166534" if att_rate >= min_att else "#991b1b"
 
+    min_perf = safe_float(getattr(config, "MIN_PERFORMANCE_PASSING_LIMIT", 5.0), 5.0)
+
     cum_score = round(sum(valid_scores)/len(valid_scores), 1) if valid_scores else 0.0
     grade_band = (
         "Outstanding"            if cum_score >= 9.0 else
@@ -440,14 +453,8 @@ def _generate_internship_report_pdf_inner(intern_profile: dict, host_url: str = 
         "Needs Improvement"      if valid_scores else
         "N/A (Pending)"
     )
-    if status == "inactive" or deact_reason:
-        verdict, v_color = "TERMINATED", "#991b1b"
-    elif status in ("completed","graduated") or (len(valid_scores) == duration and cum_score >= 5.0 and att_rate >= min_att):
-        verdict, v_color = "COMPLETED",  "#166534"
-    else:
-        verdict, v_color = "IN PROCESS", "#b45309"
-
-    min_perf = safe_float(getattr(config, "MIN_PERFORMANCE_PASSING_LIMIT", 5.0), 5.0)
+    
+    verdict, v_color = get_graduation_verdict(status, deact_reason, duration, valid_scores, cum_score, att_rate, min_att, min_perf)
 
     # Pull leave allotted from intern profile
     leave_allotted = safe_int(intern_profile.get("leave_allotted_days"), 0)
@@ -744,13 +751,24 @@ def _generate_internship_report_pdf_inner(intern_profile: dict, host_url: str = 
     intern_id = safe_str(intern_profile.get("intern_id") or intern_profile.get("rgt_id") or f"RGTV-INT-{str(intern_profile.get('id', '0000'))[:4]}", "RGTV-INT-0000")
     name = safe_str(intern_profile.get("name"), "Unknown Intern")
     email = safe_str(intern_profile.get("email"), "N/A")
-    phone = safe_str(intern_profile.get("phone"), "N/A")
-    joining_date = safe_str(intern_profile.get("joining_date"), "N/A")
+    
+    try:
+        from services.sheets_service import get_all_users
+        all_users = get_all_users()
+        sheet_user = next((u for u in all_users if u.get("id") == intern_profile.get("id")), {})
+    except Exception:
+        sheet_user = {}
+        
+    phone = safe_str(intern_profile.get("phone") or sheet_user.get("phone"), "N/A")
     duration = safe_int(intern_profile.get("internship_duration_months"), 3)
     if duration <= 0:
         duration = 3
+        
+    cycle_info = get_internship_cycle(intern_profile.get("joining_date"), duration, intern_profile.get("created_at"))
+    joining_date = safe_str(cycle_info.get("joining_date") or sheet_user.get("joining_date"), "N/A")
+    
     department = safe_str(intern_profile.get("department"), "General")
-    college_name = safe_str(intern_profile.get("college_name"), "N/A")
+    college_name = safe_str(intern_profile.get("college_name") or sheet_user.get("college_name"), "N/A")
     status = safe_str(intern_profile.get("status"), "active").lower()
     deactivation_reason = safe_str(intern_profile.get("deactivation_reason"), "")
     
@@ -786,7 +804,6 @@ def _generate_internship_report_pdf_inner(intern_profile: dict, host_url: str = 
     # 4. Section II: Monthly Tasks & Professional Competency Evaluation
     sec2_header = Paragraph("<b>SECTION II: MONTHLY TASKS & PROFESSIONAL COMPETENCY EVALUATION</b>", section_title_style)
     
-    cycle_info = get_internship_cycle(joining_date, duration, intern_profile.get("created_at"))
     all_cycles = cycle_info.get("all_cycles", [])
     
     # Force fresh performance data so PDF always reflects latest submitted reports
@@ -998,15 +1015,8 @@ def _generate_internship_report_pdf_inner(intern_profile: dict, host_url: str = 
     else:
         grade_band = "N/A (Pending Evaluations)"
         
-    if status == "inactive" or deactivation_reason:
-        verdict = "TERMINATED"
-        verdict_color = "#b91c1c"
-    elif status in ("completed", "graduated") or (len(valid_obtained_scores) == duration and cum_score >= 5.0 and att_rate >= min_att_limit):
-        verdict = "COMPLETED"
-        verdict_color = "#15803d"
-    else:
-        verdict = "IN PROCESS"
-        verdict_color = "#b45309"
+    min_perf = safe_float(getattr(config, "MIN_PERFORMANCE_PASSING_LIMIT", 5.0), 5.0)
+    verdict, verdict_color = get_graduation_verdict(status, deactivation_reason, duration, valid_obtained_scores, cum_score, att_rate, min_att_limit, min_perf)
         
     sec4_data = [
         [sec4_header, ""],
