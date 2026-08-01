@@ -207,7 +207,7 @@
     </div>{# end profile settings card #}
 
     {% if g.user.get('role') == "intern" %}
-    <div class="card mb-0" style="background-color: #ffffff; border-left: 4px solid var(--color-brand-blue, #3b82f6);">
+    <div class="card mb-0" style="background-color: #ffffff; border-left: 4px solid var(--color-brand-blue, #111111);">
       <div class="card-header" style="background-color: #ffffff; border-bottom: 1px solid #e5e7eb; padding: 1.25rem 1.5rem;">
         <h3 class="card-title" style="color: #111111; font-weight: 700; margin: 0; font-size: 1.15rem;">Your Reporting Managers</h3>
       </div>
@@ -219,7 +219,7 @@
               <div style="font-weight: 600; color: #111111; margin-bottom: 0.35rem; font-size: 1rem;">{{ mgr.name }}</div>
               <div style="color: #4b4b4b; margin-bottom: 0.35rem; font-size: 0.95rem;">{{ mgr.department or "—" }}</div>
               <div style="font-size: 0.95rem;">
-                <a href="mailto:{{ mgr.email }}" style="color: var(--color-brand-blue, #3b82f6); text-decoration: underline;">{{ mgr.email }}</a>
+                <a href="mailto:{{ mgr.email }}" style="color: var(--color-brand-blue, #111111); text-decoration: underline;">{{ mgr.email }}</a>
               </div>
             </div>
             {% endfor %}
