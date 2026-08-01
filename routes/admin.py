@@ -186,6 +186,17 @@ def edit_user(user_id):
         try:
             supa.update_profile(user_id, **updates)
             
+            if status == "active":
+                # Clear the deactivation reason manually since update_profile doesn't handle it
+                supabase = supa.get_supabase_client()
+                supabase.table("users").update({"deactivation_reason": ""}).eq("id", user_id).execute()
+                # Clear from sheets as well
+                try:
+                    from services import sheets_service as ss
+                    ss.update_user_in_sheet(user_id, status="active", deactivation_reason="")
+                except Exception as e:
+                    logger.error("Failed to clear deactivation_reason in sheets: %s", str(e))
+            
             # Log manager reassignment
             if role == "intern" and old_manager_id != manager_id:
                 ss.log_audit(g.user["id"], "reassigned_manager", f"Reassigned {name} from {old_manager_id} to {manager_id}")
@@ -1170,6 +1181,7 @@ def export_performance_report_pdf(intern_id):
             flash("Intern not found.", "error")
             return redirect(url_for("admin.users"))
             
+        logger.info("PDF intern_profile keys/values: %r", intern_profile)
         pdf_bytes = generate_internship_report_pdf(intern_profile, host_url=request.host_url)
         response = make_response(pdf_bytes)
         display_id = intern_profile.get("intern_id") or intern_profile.get("rgt_id") or f"RGTV-INT-{str(intern_profile.get('id', ''))[:4]}"
