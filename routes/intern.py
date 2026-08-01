@@ -432,7 +432,7 @@ def performance():
                     "report": r
                 })
             
-        return render_template("intern/performance.html", reports=reports, carousel_slides=carousel_slides)
+        return render_template("intern/performance.html", reports=reports, carousel_slides=carousel_slides, total_pages=1, page=1, search="")
 
     except Exception as e:
         err_tb = traceback.format_exc()
@@ -442,7 +442,7 @@ def performance():
         )
         flash(f"An error occurred loading your performance report: {str(e)}", "error")
         try:
-            return render_template("intern/performance.html", reports=[], carousel_slides=[])
+            return render_template("intern/performance.html", reports=[], carousel_slides=[], total_pages=1, page=1, search="")
         except Exception as render_err:
             logger.error("Failed to render fallback performance.html: %s", render_err)
             return redirect(url_for("intern.dashboard"))
@@ -493,4 +493,3 @@ def download_performance_report_pdf():
         )
         flash(f"Could not generate PDF report. Error: {str(e)}", "error")
         return redirect(url_for("intern.performance"))
-
