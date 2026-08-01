@@ -245,13 +245,13 @@
     <div class="hrm-card-header">
       <h3 class="hrm-card-title"><i class="fa-solid fa-file-lines"></i> Submitted Team Reports</h3>
       <form method="GET" action="{{ url_for('manager.reports') }}" class="search-input-wrap">
-        <input type="text" name="search" class="form-search-hrm" placeholder="Search interns or report types..." value="{{ search }}" onblur="this.form.submit()">
+        <input type="text" name="search" class="form-search-hrm" placeholder="Search interns or report types..." value="{{ search | default('') }}" onblur="this.form.submit()">
         <button type="submit" class="btn-search-hrm"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
       </form>
     </div>
 
     <div class="table-responsive">
-      <table class="hrm-table" data-paginate="true">
+      <table class="hrm-table table-responsive-mobile" data-paginate="true">
         <thead>
           <tr>
             <th>Intern</th>
