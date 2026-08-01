@@ -18,11 +18,23 @@
     .card-header-past { flex-direction: column; align-items: flex-start !important; }
     .card-header-past form { width: 100%; }
     .card-body { padding: 1rem !important; }
+    
+    /* Convert table to stacked cards on mobile */
+    .table-responsive-mobile { min-width: 0 !important; }
+    .table-responsive-mobile thead { display: none; }
+    .table-responsive-mobile tbody, .table-responsive-mobile tr, .table-responsive-mobile td { display: block; width: 100%; }
+    .table-responsive-mobile tr { margin-bottom: 1rem; border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden; }
+    .table-responsive-mobile td { padding: 1rem !important; border-bottom: 1px dashed var(--color-border) !important; box-sizing: border-box; }
+    .table-responsive-mobile td:last-child { border-bottom: none !important; }
   }
   
   /* Fix textarea overflow caused by long placeholders on mobile Safari/Chrome */
   .form-control { max-width: 100%; overflow-x: hidden; }
   textarea.form-control { max-width: 100%; }
+
+  /* Ensure cards sit above the network background animation */
+  .card { position: relative; z-index: 10; background-color: var(--color-surface); }
+  .reports-hero { position: relative; z-index: 10; }
 </style>
 
 <div class="reports-container">
@@ -77,8 +89,8 @@
         <noscript><button type="submit" class="btn btn-secondary btn-sm">Search</button></noscript>
       </form>
     </div>
-    <div class="card-body" style="padding: 0; overflow-x: auto;">
-      <table class="table" style="width: 100%; border-collapse: collapse; min-width: 600px;">
+    <div class="card-body" style="padding: 0;">
+      <table class="table table-responsive-mobile" style="width: 100%; border-collapse: collapse; min-width: 600px;">
         <thead>
           <tr style="border-bottom: 1px solid var(--color-border); background: #f8fafc;">
             <th style="padding: 1rem 1.5rem; text-align: left; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); width: 120px;">Date</th>
