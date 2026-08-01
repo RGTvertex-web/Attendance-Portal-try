@@ -71,7 +71,15 @@
   .empty-state h3 { font-size: 1.25rem; font-weight: 700; color: #111111; margin-bottom: 0.5rem; }
   .empty-state p { color: #737373; font-size: 0.9rem; max-width: 380px; margin: 0 auto; }
 
+  /* Carousel Navigation */
+  .carousel-nav-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 12px 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .carousel-btn { background: #1e293b; color: white; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: opacity 0.2s; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; }
+  .carousel-indicator { font-weight: 700; color: #334155; font-size: 1.1rem; text-align: center; white-space: nowrap; padding: 0 10px; }
+
   @media (max-width: 640px) {
+    .carousel-nav-container { padding: 8px 12px; }
+    .carousel-btn { padding: 6px 10px; font-size: 0.8rem; }
+    .carousel-indicator { font-size: 0.9rem; padding: 0 5px; }
   }
 </style>
 
@@ -126,14 +134,14 @@
 <!-- ── Report Carousel ── -->
 <div class="report-carousel-container" style="position: relative; max-width: 1000px; margin: 0 auto;">
   <!-- Carousel Navigation Controls -->
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 12px 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-    <button id="prevBtn" class="carousel-btn" style="background: #1e293b; color: white; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: opacity 0.2s;">
+  <div class="carousel-nav-container">
+    <button id="prevBtn" class="carousel-btn">
       <i class="fa-solid fa-chevron-left" style="margin-right: 5px;"></i> Previous
     </button>
-    <div id="carouselIndicator" style="font-weight: 700; color: #334155; font-size: 1.1rem;">
+    <div id="carouselIndicator" class="carousel-indicator">
       Month 1
     </div>
-    <button id="nextBtn" class="carousel-btn" style="background: #1e293b; color: white; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: opacity 0.2s;">
+    <button id="nextBtn" class="carousel-btn">
       Next <i class="fa-solid fa-chevron-right" style="margin-left: 5px;"></i>
     </button>
   </div>
