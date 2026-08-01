@@ -481,6 +481,8 @@ a:hover { color: var(--color-primary-hover); text-decoration: underline; }
   box-shadow: var(--shadow-sm);
   margin-bottom: 2rem;
   overflow: hidden;
+  position: relative;
+  z-index: 10;
 }
 .card-header {
   padding: 1.125rem 1.5rem;
@@ -640,6 +642,8 @@ a:hover { color: var(--color-primary-hover); text-decoration: underline; }
 
 .form-control, .form-select {
   width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   padding: 0.75rem 1rem;
   font-size: 0.95rem;
   font-family: var(--font-sans);
@@ -648,6 +652,9 @@ a:hover { color: var(--color-primary-hover); text-decoration: underline; }
   border: 1px solid #9ca3af;
   border-radius: var(--radius-md);
   transition: all 0.2s ease;
+}
+textarea.form-control {
+  max-width: 100%;
 }
 .form-control.with-icon, .form-select.with-icon {
   padding-left: 2.75rem;
@@ -785,6 +792,14 @@ h1, .hero-title, .page-display-title {
   .grid-cols-2 { grid-template-columns: 1fr !important; gap: 1rem !important; }
   .status-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
   .user-info { display: none; }
+
+  /* Convert table to stacked cards on mobile */
+  .table-responsive-mobile { min-width: 0 !important; }
+  .table-responsive-mobile thead { display: none; }
+  .table-responsive-mobile tbody, .table-responsive-mobile tr, .table-responsive-mobile td { display: block; width: 100%; }
+  .table-responsive-mobile tr { margin-bottom: 1rem; border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden; background: var(--color-surface); }
+  .table-responsive-mobile td { padding: 1rem !important; border-bottom: 1px dashed var(--color-border) !important; box-sizing: border-box; text-align: left !important; }
+  .table-responsive-mobile td:last-child { border-bottom: none !important; }
 }
 
 @media (max-width: 576px) {
