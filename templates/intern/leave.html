@@ -3,27 +3,47 @@
 {% block page_title %}Leave Request{% endblock %}
 
 {% block content %}
-<div style="max-width: 800px; margin: 2rem auto;">
+<style>
+  .leave-container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+  .leave-hero { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 2rem; }
+  .leave-hero-title { font-size: 2rem; margin-bottom: 0; }
   
-  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+  .stats-grid { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; }
+  .stat-card { text-align: center; padding: 1.5rem; flex: 1; }
+  .stat-label { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; font-weight: 600; color: var(--color-text-muted); }
+  .stat-val { font-size: 2.5rem; font-weight: 700; font-family: Georgia, serif; }
+
+  .date-row { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem; }
+  .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  @media (min-width: 768px) {
+    .leave-hero { flex-direction: row; justify-content: space-between; align-items: flex-end; }
+    .stats-grid { flex-direction: row; }
+    .date-row { flex-direction: row; }
+    .date-row > .form-group { flex: 1; }
+  }
+</style>
+
+<div class="leave-container">
+  <div class="leave-hero">
     <div>
-      <h1 class="hero-title" style="font-size: 2rem; margin-bottom: 0.5rem;">Leave Request</h1>
-      <p class="text-muted">Manage your leave balance and applications.</p>
+      <h1 class="hero-title leave-hero-title">Leave Request</h1>
+      <p class="text-muted m-0">Manage your leave balance and applications.</p>
     </div>
   </div>
 
-  <div class="row" style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
-    <div class="card" style="flex: 1 1 200px; min-width: 200px; text-align: center; padding: 1.5rem;">
-      <h3 class="text-muted" style="font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Total Allotted</h3>
-      <div style="font-size: 2.5rem; font-weight: 700; font-family: Georgia, serif;">{{ total_allotted }}</div>
+  <div class="stats-grid">
+    <div class="card stat-card">
+      <h3 class="stat-label">Total Allotted</h3>
+      <div class="stat-val">{{ total_allotted }}</div>
     </div>
-    <div class="card" style="flex: 1 1 200px; min-width: 200px; text-align: center; padding: 1.5rem;">
-      <h3 class="text-muted" style="font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Used (Approved)</h3>
-      <div style="font-size: 2.5rem; font-weight: 700; font-family: Georgia, serif;">{{ used_days }}</div>
+    <div class="card stat-card">
+      <h3 class="stat-label">Used (Approved)</h3>
+      <div class="stat-val">{{ used_days }}</div>
     </div>
-    <div class="card" style="flex: 1 1 200px; min-width: 200px; text-align: center; padding: 1.5rem;">
-      <h3 class="text-muted" style="font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Remaining</h3>
-      <div style="font-size: 2.5rem; font-weight: 700; font-family: Georgia, serif;">{{ remaining_days }}</div>
+    <div class="card stat-card">
+      <h3 class="stat-label">Remaining</h3>
+      <div class="stat-val">{{ remaining_days }}</div>
     </div>
   </div>
   
@@ -51,12 +71,12 @@
           </select>
         </div>
 
-        <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
-          <div class="form-group" style="flex: 1;">
+        <div class="date-row">
+          <div class="form-group">
             <label class="form-label">Start Date</label>
             <input type="date" name="start_date" class="form-control" required>
           </div>
-          <div class="form-group" style="flex: 1;">
+          <div class="form-group">
             <label class="form-label">End Date (Inclusive)</label>
             <input type="date" name="end_date" class="form-control" required>
           </div>
@@ -79,7 +99,8 @@
       Leave History
     </div>
     <div class="card-body" style="padding: 0;">
-      <table class="table" style="width: 100%; border-collapse: collapse;">
+      <div class="table-responsive">
+        <table class="table" style="width: 100%; border-collapse: collapse; min-width: 600px;">
         <thead>
           <tr style="border-bottom: 1px solid var(--color-border); background: var(--color-surface);">
             <th style="padding: 1rem 1.5rem; text-align: left; font-weight: 500; font-size: 0.875rem; color: var(--color-text-muted);">Duration</th>
@@ -135,6 +156,7 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
     </div>
   </div>
 
