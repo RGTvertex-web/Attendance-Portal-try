@@ -21,7 +21,7 @@ def create_app():
 
     # ── Jinja ──────────────────────────────────────────────────────────────────
     import jinja2
-    app.jinja_env.undefined = jinja2.StrictUndefined if app.debug else jinja2.Undefined
+    app.jinja_env.undefined = jinja2.Undefined
 
     # ── Logging ────────────────────────────────────────────────────────────────
     logging.basicConfig(
