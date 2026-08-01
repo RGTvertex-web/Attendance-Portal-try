@@ -396,9 +396,9 @@
               <th>Action</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="daily-reports-tbody">
             {% for sub in submissions|sort(attribute='submitted_at', reverse=True) %}
-            <tr>
+            <tr class="daily-report-row" style="display: {% if loop.index0 < 5 %}table-row{% else %}none{% endif %};">
               <td style="font-weight: 700; color: #0f172a; white-space: nowrap;">{{ sub.submitted_at[:10] }}</td>
               <td style="color: #475569; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                 {{ sub.report_data.done }}
@@ -423,6 +423,13 @@
             {% endfor %}
           </tbody>
         </table>
+        {% if submissions|length > 5 %}
+        <div class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3" id="daily-pagination">
+           <button class="btn btn-outline-secondary btn-sm" onclick="changeDailyPage(-1)" id="daily-prev-btn" disabled>Previous</button>
+           <span id="daily-page-indicator" class="text-muted" style="font-size: 0.8rem;">Page 1 of {{ (submissions|length / 5)|round(0, 'ceil')|int }}</span>
+           <button class="btn btn-outline-secondary btn-sm" onclick="changeDailyPage(1)" id="daily-next-btn">Next</button>
+        </div>
+        {% endif %}
       </div>
     </div>
 
@@ -434,9 +441,9 @@
       </div>
       <div class="hrm-card-body">
         {% if perf_reports %}
-          <div class="past-perf-list">
+          <div class="past-perf-list" id="perf-reports-container">
           {% for pr in perf_reports|reverse %}
-            <div class="past-perf-card">
+            <div class="past-perf-card perf-report-row" style="display: {% if loop.index0 < 3 %}block{% else %}none{% endif %}; padding: 1.5rem;">
               <div class="past-perf-header">
                 <div class="past-perf-title">
                   <i class="fa-solid fa-certificate" style="color:#7c3aed;"></i> {{ pr.get('report_type', 'Monthly') }} Evaluation
@@ -477,6 +484,13 @@
             </div>
           {% endfor %}
           </div>
+          {% if perf_reports|length > 3 %}
+          <div class="d-flex justify-content-between align-items-center mt-3">
+             <button class="btn btn-outline-secondary btn-sm" onclick="changePerfPage(-1)" id="perf-prev-btn" disabled>Previous</button>
+             <span id="perf-page-indicator" class="text-muted" style="font-size: 0.8rem;">Page 1 of {{ (perf_reports|length / 3)|round(0, 'ceil')|int }}</span>
+             <button class="btn btn-outline-secondary btn-sm" onclick="changePerfPage(1)" id="perf-next-btn">Next</button>
+          </div>
+          {% endif %}
         {% else %}
           <div class="empty-state-box" style="padding: 2rem 0;">
             <i class="fa-solid fa-star-half-stroke"></i>
@@ -514,4 +528,60 @@
   </div>
 
 </div><!-- /hrm-page -->
+
+<script>
+  let currentDailyPage = 1;
+  const dailyPerPage = 5;
+  const totalDaily = {{ submissions|length }};
+  const maxDailyPage = Math.ceil(totalDaily / dailyPerPage) || 1;
+
+  function changeDailyPage(dir) {
+    currentDailyPage += dir;
+    if (currentDailyPage < 1) currentDailyPage = 1;
+    if (currentDailyPage > maxDailyPage) currentDailyPage = maxDailyPage;
+    
+    const rows = document.querySelectorAll('.daily-report-row');
+    rows.forEach((row, index) => {
+      if (index >= (currentDailyPage - 1) * dailyPerPage && index < currentDailyPage * dailyPerPage) {
+        row.style.display = 'table-row';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+    
+    const indicator = document.getElementById('daily-page-indicator');
+    if(indicator) indicator.textContent = `Page ${currentDailyPage} of ${maxDailyPage}`;
+    const prevBtn = document.getElementById('daily-prev-btn');
+    if(prevBtn) prevBtn.disabled = currentDailyPage === 1;
+    const nextBtn = document.getElementById('daily-next-btn');
+    if(nextBtn) nextBtn.disabled = currentDailyPage === maxDailyPage;
+  }
+
+  let currentPerfPage = 1;
+  const perfPerPage = 3;
+  const totalPerf = {{ perf_reports|length if perf_reports else 0 }};
+  const maxPerfPage = Math.ceil(totalPerf / perfPerPage) || 1;
+
+  function changePerfPage(dir) {
+    currentPerfPage += dir;
+    if (currentPerfPage < 1) currentPerfPage = 1;
+    if (currentPerfPage > maxPerfPage) currentPerfPage = maxPerfPage;
+    
+    const rows = document.querySelectorAll('.perf-report-row');
+    rows.forEach((row, index) => {
+      if (index >= (currentPerfPage - 1) * perfPerPage && index < currentPerfPage * perfPerPage) {
+        row.style.display = 'block';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+    
+    const indicator = document.getElementById('perf-page-indicator');
+    if(indicator) indicator.textContent = `Page ${currentPerfPage} of ${maxPerfPage}`;
+    const prevBtn = document.getElementById('perf-prev-btn');
+    if(prevBtn) prevBtn.disabled = currentPerfPage === 1;
+    const nextBtn = document.getElementById('perf-next-btn');
+    if(nextBtn) nextBtn.disabled = currentPerfPage === maxPerfPage;
+  }
+</script>
 {% endblock %}
