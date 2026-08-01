@@ -274,21 +274,26 @@ def get_all_managers():
 
 def update_profile(user_id, **fields):
     """Update specific fields for a user."""
+    res_data = None
     try:
         supabase = get_supabase_client()
         res = supabase.table("users").update(fields).eq("id", user_id).execute()
-        
-        # Keep Sheets in sync
-        try:
-            from services.sheets_service import update_user_in_sheet
-            update_user_in_sheet(user_id, **fields)
-        except Exception as e:
-            logger.error(f"Failed to sync profile update to Sheets for {user_id}: {e}")
-            
-        global_cache.invalidate("Profiles")
-        return res.data
+        res_data = res.data
     except Exception as e:
-        raise ValueError(f"Failed to update user: {str(e)}")
+        if "college_name" in str(e):
+            logger.warning(f"Gracefully ignoring missing college_name column in Supabase for {user_id}. Please run SQL migration.")
+        else:
+            raise ValueError(f"Failed to update user in Supabase: {str(e)}")
+            
+    # Keep Sheets in sync regardless of minor Supabase schema issues
+    try:
+        from services.sheets_service import update_user_in_sheet
+        update_user_in_sheet(user_id, **fields)
+    except Exception as e:
+        logger.error(f"Failed to sync profile update to Sheets for {user_id}: {e}")
+        
+    global_cache.invalidate("Profiles")
+    return res_data
 
 def update_profile_and_password(user_id, name=None, new_password=None):
     """Update name and/or password, and regenerate session token if password changes."""
