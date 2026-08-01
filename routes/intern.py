@@ -479,6 +479,7 @@ def acknowledge_performance(report_id):
 def download_performance_report_pdf():
     from services.pdf_service import generate_internship_report_pdf
     try:
+        logger.info("PDF intern_profile keys/values: %r", g.user)
         pdf_bytes = generate_internship_report_pdf(g.user, host_url=request.host_url)
         response = make_response(pdf_bytes)
         intern_id = g.user.get("intern_id") or g.user.get("rgt_id") or f"RGTV-INT-{str(g.user.get('id', ''))[:4]}"
