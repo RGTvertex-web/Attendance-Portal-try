@@ -55,7 +55,7 @@
 <!-- ── Filters ─────────────────────────────────────────────────────────────── -->
 <div class="card mb-4" style="padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem; background-color: var(--color-surface-hover);">
   <form method="GET" action="{{ url_for('admin.users') }}" style="display: flex; align-items: center; gap: 1rem; width: 100%;">
-    <input type="text" name="search" class="form-control" placeholder="Search name/email..." value="{{ search }}" style="width: 250px;">
+    <input type="text" name="search" class="form-control" placeholder="Search name/email..." value="{{ search | default('') }}" style="width: 250px;">
     <span class="text-muted" style="font-weight: 600; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; margin-left: auto;">Filter By:</span>
     <select name="role" class="form-select" style="width: auto; flex-grow: 1;">
       <option value="">All Roles</option>
@@ -207,7 +207,7 @@
     </div>
 
   <div class="table-responsive">
-    <table class="table">
+    <table class="table table-responsive-mobile">
       <thead>
         <tr>
           <th style="width: 40px; text-align: center;">

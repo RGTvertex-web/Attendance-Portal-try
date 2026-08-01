@@ -13,7 +13,7 @@
 <!-- ── Filter Bar ──────────────────────────────────────────────────────────── -->
 <div class="card mb-4" style="padding: 1rem 1.5rem; background-color: var(--color-surface-hover);">
   <form method="GET" action="{{ url_for('admin.audit_logs') }}" style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-    <input type="text" name="search" class="form-control" placeholder="Search actor, action, or details..." value="{{ search }}" style="width: 350px;">
+    <input type="text" name="search" class="form-control" placeholder="Search actor, action, or details..." value="{{ search | default('') }}" style="width: 350px;">
     
     <div style="display: flex; gap: 0.5rem;">
       <button type="submit" class="btn btn-primary btn-sm">Search</button>
@@ -25,7 +25,7 @@
 <!-- ── Results Table ───────────────────────────────────────────────────────── -->
 <div class="card">
   <div class="table-responsive">
-    <table class="table">
+    <table class="table table-responsive-mobile">
       <thead>
         <tr>
           <th>Timestamp (UTC)</th>

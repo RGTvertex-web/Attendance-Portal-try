@@ -14,12 +14,12 @@
   <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
     <h3 class="card-title">All Requests</h3>
     <form method="GET" action="{{ url_for('admin.leaves') }}" style="display: flex; gap: 0.5rem; align-items: center;">
-      <input type="text" name="search" class="form-control" placeholder="Search interns or reasons..." value="{{ search }}" style="width: 250px;" onblur="this.form.submit()">
+      <input type="text" name="search" class="form-control" placeholder="Search interns or reasons..." value="{{ search | default('') }}" style="width: 250px;" onblur="this.form.submit()">
       <noscript><button type="submit" class="btn btn-secondary btn-sm">Search</button></noscript>
     </form>
   </div>
   <div class="table-responsive">
-    <table class="table">
+    <table class="table table-responsive-mobile">
       <thead>
         <tr>
           <th>Intern</th>

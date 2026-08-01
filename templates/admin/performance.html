@@ -13,7 +13,7 @@
 <!-- ── Filter Bar ──────────────────────────────────────────────────────────── -->
 <div class="card mb-4" style="padding: 1rem 1.5rem; background-color: var(--color-surface-hover);">
   <form method="GET" action="{{ url_for('admin.performance') }}" style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-    <input type="text" name="search" class="form-control" placeholder="Search intern or manager..." value="{{ search }}" style="width: 250px;">
+    <input type="text" name="search" class="form-control" placeholder="Search intern or manager..." value="{{ search | default('') }}" style="width: 250px;">
     <span class="text-muted" style="font-weight: 600; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; margin-left: auto;">Filter:</span>
     
     <select name="department" class="form-select" style="width: auto;" onchange="this.form.submit()">
@@ -35,7 +35,7 @@
 <!-- ── Results Table ───────────────────────────────────────────────────────── -->
 <div class="card">
   <div class="table-responsive">
-    <table class="table">
+    <table class="table table-responsive-mobile">
       <thead>
         <tr>
           <th>Submitted</th>
