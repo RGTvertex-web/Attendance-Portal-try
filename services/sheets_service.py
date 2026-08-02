@@ -246,6 +246,21 @@ def _ensure_sheet_columns(sheet_name: str) -> None:
 # USERS
 # ══════════════════════════════════════════════════════════════════════════════
 
+def get_all_users() -> List[Dict]:
+    cached = global_cache.get("Users")
+    if cached is not None:
+        return cached
+
+    try:
+        sheet = _get_sheet("Users")
+        rows = sheet.get_all_values()[1:]
+        res = _rows_to_dicts(rows, _USERS_COLS)
+        global_cache.set("Users", res)
+        return res
+    except Exception as e:
+        logger.error(f"Error getting all users from Sheets: {e}")
+        return []
+
 def add_user_to_sheet(user_dict: Dict) -> None:
     try:
         sheet = _get_sheet("Users")
@@ -267,6 +282,7 @@ def add_user_to_sheet(user_dict: Dict) -> None:
         ]
         try:
             sheet.append_row(row, value_input_option="RAW", table_range="A1")
+            global_cache.invalidate("Users")
             logger.info("Added user %s to Users sheet", user_dict.get("id"))
         except Exception as e:
             logger.error(f"Failed to add user {user_dict.get('id')} to Sheets: {str(e)}")
@@ -283,6 +299,7 @@ def update_user_in_sheet(user_id: str, **fields) -> bool:
                 for field, value in fields.items():
                     if field in _USERS_COLS:
                         sheet.update_cell(i, _USERS_COLS[field] + 1, str(value) if value is not None else "")
+                global_cache.invalidate("Users")
                 logger.info("Updated user %s in Sheets", user_id)
                 return True
         return False
@@ -297,6 +314,7 @@ def delete_user_from_sheet(user_id: str) -> bool:
         for i, row in enumerate(all_rows[1:], start=2):
             if row[0] == user_id:  # id is index 0
                 sheet.delete_rows(i)
+                global_cache.invalidate("Users")
                 logger.info("Deleted user %s from Users sheet", user_id)
                 return True
         return False
