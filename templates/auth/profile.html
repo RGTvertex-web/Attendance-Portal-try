@@ -154,14 +154,9 @@
 
         {% if g.user.get('role') == 'intern' %}
         <div class="form-group">
-          <label class="form-label" for="university">University</label>
-          {% if g.user.get('college_name') %}
-            <input type="text" class="form-control" value="{{ g.user.get('college_name') }}" readonly disabled style="background: #f9fafb; cursor: not-allowed;">
-            <input type="hidden" name="university" value="{{ g.user.get('college_name') }}">
-            <div class="text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">University cannot be changed once set. Contact an admin if needed.</div>
-          {% else %}
-            <input id="university" type="text" name="university" class="form-control" value="" placeholder="Your university name">
-          {% endif %}
+          <label class="form-label">University</label>
+          <input type="text" class="form-control" value="{{ g.user.get('college_name') or 'N/A' }}" readonly disabled style="background: #f9fafb; cursor: not-allowed;">
+          <div class="text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">University cannot be changed. Contact an admin if needed.</div>
         </div>
         {% endif %}
 
