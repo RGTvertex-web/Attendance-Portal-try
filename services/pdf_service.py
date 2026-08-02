@@ -528,7 +528,13 @@ def _generate_internship_report_pdf_inner(intern_profile: dict, host_url: str = 
     story.append(Spacer(1, 14))
 
     # ── Disclaimer + Footer Strip ───────────────────────────────────────────
-    verify_url = f"{host_url.rstrip('/')}/verify/{intern_id}" if host_url else f"/verify/{intern_id}"
+    if host_url:
+        host_url = host_url.rstrip('/')
+        if not host_url.startswith("http://localhost") and not host_url.startswith("http://127.0.0.1"):
+            host_url = host_url.replace("http://", "https://")
+        verify_url = f"{host_url}/verify/{intern_id}"
+    else:
+        verify_url = f"/verify/{intern_id}"
     ist_tz = pytz.timezone('Asia/Kolkata')
     v_date = datetime.now(ist_tz).strftime("%Y-%m-%d %H:%M IST")
 
@@ -1092,7 +1098,13 @@ def _generate_internship_report_pdf_inner(intern_profile: dict, host_url: str = 
     CustomReportCanvas.intern_id = intern_id
     ist_tz = pytz.timezone('Asia/Kolkata')
     CustomReportCanvas.verification_date = datetime.now(ist_tz).strftime("%Y-%m-%d %H:%M:%S IST")
-    CustomReportCanvas.verify_url = f"{host_url.rstrip('/')}/verify/{intern_id}" if host_url else f"/verify/{intern_id}"
+    if host_url:
+        host_url = host_url.rstrip('/')
+        if not host_url.startswith("http://localhost") and not host_url.startswith("http://127.0.0.1"):
+            host_url = host_url.replace("http://", "https://")
+        CustomReportCanvas.verify_url = f"{host_url}/verify/{intern_id}"
+    else:
+        CustomReportCanvas.verify_url = f"/verify/{intern_id}"
     
     doc.build(story, canvasmaker=CustomReportCanvas)
     
